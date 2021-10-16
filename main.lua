@@ -6,13 +6,13 @@ playerY = -16
 playerAnim = 0
 playerFlipX = nil
 
-scrollX=0
-scrollY=0
+scrollX = 0
+scrollY = 0
 
---# Foes (active/x/y/speedY)
 playerBullets = {}
 lastBulletTick = 0
 
+enemies = {}
 
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
@@ -48,14 +48,12 @@ end
 --#Add random stars
 for i = 0,40,1 do
 	--#Put a random star tile in a random position on the map
-	-- tile(3, math.random(30), math.random(30), 62+math.random(9))
-	tile(3, math.random(30), math.random(30), 63)
+	tile(3, math.random(30), math.random(30), 62+math.random(9))
+	-- tile(3, math.random(30), math.random(30), 63)
 end
 
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
 priority(0, 2, 3, 3)
-
-
 
 --# ----------------------------------
 --# ------- GAME INIT --------
@@ -175,10 +173,18 @@ function update()
 			end
 		end
 
-		-- player shoot
+		-- A -- player shoot
 		if btn(0) then
 			if ticks - lastBulletTick > 10 then
 				spawnPlayerBullet()
+				lastBulletTick = ticks
+			end
+		end
+
+		-- B -- spawn enemy
+		if btn(1) then
+			if ticks - lastBulletTick > 10 then
+				spawnEnemy()
 				lastBulletTick = ticks
 			end
 		end
@@ -206,6 +212,18 @@ function update()
 				table.remove(playerBullets, k)
 			end
 		end
+
+		-- update enemy positions
+		for k, v in pairs(enemies) do
+			enemies[k].y = enemies[k].y - enemies[k].speedY
+			enemies[k].x = enemies[k].x - enemies[k].speedX
+			-- cull enemies that are off screen
+			if enemies[k].y > 160 then
+				table.remove(enemies, k)
+			end
+		end
+
+		detectCollision()
 
 		scroll(3, scrollX, scrollY)
 		
@@ -487,9 +505,14 @@ function draw()
 		-- render player
 		spr(playerAnim, playerX, playerY, playerFlipX)
 	
-		-- for each player bullet
+		-- render player bullets
 		for k, v in pairs(playerBullets) do
 			spr(8, v.x, v.y)
+		end
+
+		-- render enemies
+		for k, v in pairs(enemies) do
+			spr(0, v.x, v.y)
 		end
 		
 	--#Else display meteor pieces for the game over screen
@@ -515,6 +538,38 @@ function spawnPlayerBullet()
 	)
 end
 
+function spawnEnemy()
+	table.insert(
+		enemies,
+		{
+			x = playerX,
+		  y = -12,
+		  speedX = 0,
+		  speedY = -1
+		}
+	)
+end
+
+function detectCollision()
+	for ek, ev in pairs(enemies) do
+		for bk, bv in pairs(playerBullets) do
+			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
+				table.remove(enemies, ek)
+				table.remove(playerBullets, bk)
+			end
+		end
+	end
+end
+
+-- https://love2d.org/forums/viewtopic.php?p=196465&sid=7893979c5233b13efed2f638e114ce87#p196465
+function colliding(x1,y1,w1,h1, x2,y2,w2,h2)
+  return (
+    x1 < x2+w2 and
+    x2 < x1+w1 and
+    y1 < y2+h2 and
+    y2 < y1+h1
+  )
+end
 --# Count how much RAM the whole LUA script is using (max 256kb)
 -- print(tostring(collectgarbage("count")*1024), 0, 19)
 
