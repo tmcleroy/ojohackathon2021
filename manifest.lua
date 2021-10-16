@@ -1,0 +1,29 @@
+
+local app = {
+   name = "ojohackathon",
+
+   tilesets = {
+      "overlay.bmp",
+      "tiles.bmp",
+   },
+
+   spritesheets = {
+      "sprites.bmp",
+   },
+
+   audio = {
+      "music.raw",
+      "sfx_gameover.raw",
+      "sfx_crash.raw",
+   },
+
+   scripts = {
+      "main.lua",
+   },
+
+   misc = {
+
+   }
+}
+
+return app
