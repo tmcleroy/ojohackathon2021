@@ -1,36 +1,26 @@
 -- gba screen res 240x160
 
 --# Player
-playerX=0
-playerY=-16
-playerAnim=0
-playerFlipX=nil
+playerX = 0
+playerY = -16
+playerAnim = 0
+playerFlipX = nil
 
 scrollX=0
 scrollY=0
 
 --# Foes (active/x/y/speedY)
-foes={}
-foesMax=14
-foesTimer=0
-for i=0,foesMax,1 do
-	table.insert(foes,{
-		active=0
-		,x=math.random(224)
-		,y=-16
-		,speedX=0
-		,speedY=0
-	})
-end 	
+playerBullets = {}
+lastBulletTick = 0
 
 
 --# Gameplay
-STATE=0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
-ticks=0
-score=0
-highscore=-1
-ticks_anim=0
-screenshake=0
+STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
+ticks = 0
+score = 0
+highscore = -1
+ticks_anim = 0
+screenshake = 0
 
 --# ------------------------------------
 --# ----- LOAD ASSETS ------
@@ -45,13 +35,12 @@ txtr(1, "tiles.bmp")
 txtr(2, "tiles.bmp")
 txtr(4, "sprites.bmp")
 
---# -= Star filled sky =-
---#Paint it black
---#For every line
-for i = -50,50,1 do 
-	--#For every column
-	for j = -50,50,1 do 
-		--#Manually put a "black" tile in the layer
+-- black out screen
+-- fill enough vertical lines for a seamless vertical scroll
+for i = 0,31,1 do 
+	-- horizontal columns
+	for j = 0,29,1 do 
+		-- black tile
 		tile(3, j, i, 62)
 	end
 end
@@ -59,40 +48,9 @@ end
 --#Add random stars
 for i = 0,40,1 do
 	--#Put a random star tile in a random position on the map
-	tile(3, math.random(30), math.random(30), 62+math.random(9))
+	-- tile(3, math.random(30), math.random(30), 62+math.random(9))
+	tile(3, math.random(30), math.random(30), 63)
 end
-
--- --# -= Star filled sky =-
--- --#Paint it black
--- --#For every line
--- for i = 0,19,1 do 
--- 	--#For every column
--- 	for j = 0,29,1 do 
--- 		--#Manually put a "black" tile in the layer
--- 		tile(3, j, i, 62)
--- 	end
--- end
-
--- --#Add random stars
--- for i = 0,40,1 do
--- 	--#Put a random star tile in a random position on the map
--- 	tile(3, math.random(29), math.random(16), 62+math.random(9))
--- end
-
-
--- --# -= Lunar ground =-
--- --#For every column
--- for i = 0,29,1 do 
--- 	--#Display the ground over 4 lines
--- 	--#Top row
--- 	tile(2, i, 17, i+2)
--- 	--#Middle row
--- 	tile(2, i, 18, i+32)
--- 	--#Bottom row (plain grey tile)
--- 	tile(2, i, 19, 1)
--- 	--#out of screen bottomest row (plain grey tile in case of screenshake)
--- 	tile(2, i, 20, 1)
--- end
 
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
 priority(0, 2, 3, 3)
@@ -115,21 +73,9 @@ function init()
 	
 	--# Init player vars
 	playerX=112
-	playerY=70
+	playerY=130
 	playerFlipX=nil
 	playerAnim=1
-	
-	--# Init the meteors
-	foes={}
-	for i=0,foesMax,1 do
-		table.insert(foes,{
-			active=0
-			,x=math.random(224)
-			,y=-16
-			,speedX=0
-			,speedY=0
-		})
-	end 	
 	
 	--#Erase the overlay messages
 	--#For every line
@@ -161,7 +107,8 @@ function update()
 	
 	--# Reset ticks counter every 60 seconds (i.e. after 1 min)
 	if ticks > 3601 then
-		ticks=1
+		ticks = 1
+		lastBulletTick = 1
 	end
 
 	--#OPTIMIZATION: make a local var with the same name as the global one, now that we won't be modifying it anymore but we'll read it quite often in the rest of the script / main loop
@@ -172,64 +119,69 @@ function update()
 		
 		--# === OPTIMIZATION ===
 		--# Make local vars with the same names as the global ones, then we'll copy back the values from local to global vars at the end of the main loop
-		local playerX=playerX
-		local playerY=playerY
-		local scrollX=scrollX
-		local scrollY=scrollY
-		local playerAnim=playerAnim
-		local playerFlipX=playerFlipX
-		local screenshake=screenshake
-		local foesTimer=foesTimer
-		local score=score
+		local playerX = playerX
+		local playerY = playerY
+		local scrollX = scrollX
+		local scrollY = scrollY
+		local playerAnim = playerAnim
+		local playerFlipX = playerFlipX
+		local screenshake = screenshake
+		local foesTimer = foesTimer
+		local score = score
+		local lastBulletTick = lastBulletTick
 	
-	
-		--# === PLAYER ===
-		
+			
 		--# Local variable to check wether we can increase animation frame if player walks
-		local animate=ticks % 5 == 0
+		local animate = ticks % 5 == 0
+		local shoot = ticks % 10 == 0
 		local moving = false
+		
 		-- right
 		if btn(5) then
 			moving = true
-			if playerX >= 195 then
-				playerX = 195
+			if playerX >= 227 then
+				playerX = 227
 			else
-				playerX = playerX + 2	
-			end	
+				playerX = playerX + 3	
+			end
 			playerFlipX=nil
-			scrollX = scrollX + 1
 		end
 		-- left
 		if btn(4) then
 			moving = true
-			if playerX <= 30 then
-				playerX = 30
+			if playerX <= -3 then
+				playerX = -3
 			else
-				playerX = playerX - 2
+				playerX = playerX - 3
 			end
 			playerFlipX=1
-			scrollX = scrollX - 1
 		end
 		-- up
 		if btn(6) then
 			moving = true
-			if playerY <= 30 then
-				playerY = 30
+			if playerY <= -2 then
+				playerY = -2
 			else
-				playerY = playerY - 2
+				playerY = playerY - 3
 			end
-			scrollY = scrollY - 1
 		end
   	-- down
 		if btn(7) then
 			moving = true
-			if playerY >= 110 then
-				playerY = 110
+			if playerY >= 144 then
+				playerY = 144
 			else
-				playerY = playerY + 2
+				playerY = playerY + 3
 			end
-			scrollY = scrollY + 1
-		end	
+		end
+
+		-- player shoot
+		if btn(0) then
+			if ticks - lastBulletTick > 10 then
+				spawnPlayerBullet()
+				lastBulletTick = ticks
+			end
+		end
 		
 		if moving then
 			if animate then
@@ -241,6 +193,18 @@ function update()
 		else
 			-- stand still
 			playerAnim=1
+		end
+
+		-- scroll the stars
+		scrollY = scrollY - 1
+
+		-- update player bullet positions
+		for k, v in pairs(playerBullets) do
+			playerBullets[k].y = playerBullets[k].y - playerBullets[k].speedY
+			-- cull player bullets that are off screen
+			if playerBullets[k].y < -12 then
+				table.remove(playerBullets, k)
+			end
 		end
 
 		scroll(3, scrollX, scrollY)
@@ -263,15 +227,16 @@ function update()
 		
 		--# === OPTIMIZATION === 
 		--# Copy back the values from local to global vars with the same name at the end of the main loop (for gameplay only, other states are not so time critical so we didn't optimize them. And for gameover I actually use slowdown voluntarily for a more dramatic effect!)
-		_G.playerX=playerX
-		_G.playerY=playerY
-		_G.scrollX=scrollX
-		_G.scrollY=scrollY
-		_G.playerAnim=playerAnim
-		_G.playerFlipX=playerFlipX
-		_G.screenshake=screenshake
-		_G.foesTimer=foesTimer
-		_G.score=score
+		_G.playerX = playerX
+		_G.playerY = playerY
+		_G.scrollX = scrollX
+		_G.scrollY = scrollY
+		_G.playerAnim = playerAnim
+		_G.playerFlipX = playerFlipX
+		_G.screenshake = screenshake
+		_G.foesTimer = foesTimer
+		_G.score = score
+		_G.lastBulletTick = lastBulletTick
 
 
 	--# === GAME OVER STATE ===	
@@ -519,39 +484,16 @@ function draw()
 	
 	--#If we are in gameplay, display regular meteors
 	if STATE == 1 then
-		--# Display Player before meteors
+		-- render player
 		spr(playerAnim, playerX, playerY, playerFlipX)
 	
-		--# For each foe
-		for i = 1,14,1 do 
-			--#Get the current object in a local variable for (slightly) faster access
-			local obj=foes[i]
-			
-			--#If the foe is active, display it on screen
-			if obj.active == 1 then
-				spr(0, obj.x, obj.y)
-			end
+		-- for each player bullet
+		for k, v in pairs(playerBullets) do
+			spr(8, v.x, v.y)
 		end
 		
 	--#Else display meteor pieces for the game over screen
 	else
-	
-		--# Don't do it if ticks_anim == 180, meaning we haven't initialized the meteors yet (this check avoid displaying meteors at their original place before they are reused for the game over explosion parts, looking like a glitch)
-		if ticks_anim ~= 180 then
-		
-			--# For each foe
-			for i = 1,14,1 do 
-				
-				--#Get the current object in a local variable for (slightly) faster access
-				local obj=foes[i] 
-				
-				--#If the foe is active, display it on screen (use their index if foes table to attribute them a different anim)
-				if obj.active == 1 then
-					spr(6+(i%4), obj.x, obj.y)
-				end
-			end
-		end	
-	
 		--# Display Player after meteors pieces
 		spr(playerAnim, playerX, playerY, playerFlipX)
 	end
@@ -561,35 +503,20 @@ function draw()
 	
 end
 
-
---# ------------------------------------
---# --- SPAWN METEOR ----
---# ------------------------------------
-function spawnFoe()
-
-	--# Check among the Foes for an empty slot (else, silently skip generating a foe)
-	for i = 1,14,1 do 
-	
-		--#Get the current object in a local variable for (slightly) faster access
-		local obj=foes[i]
-	
-		--#If the foe is inactive, then makes it active!
-		if obj.active == 0 then
-		
-			--#Activate it (the position value are already randomly generated when the foe is disabled)
-			obj.active=1
-			
-			--# Job done, quit function for now!
-			return
-		end
-	end
-	
+function spawnPlayerBullet()
+	table.insert(
+		playerBullets,
+		{
+			x = playerX - 2,
+		  y = playerY - 8,
+		  speedX = 0,
+		  speedY = 2
+		}
+	)
 end
 
-
-
 --# Count how much RAM the whole LUA script is using (max 256kb)
---#print(tostring(collectgarbage("count")*1024), 0, 19)
+-- print(tostring(collectgarbage("count")*1024), 0, 19)
 
 
 --# ------------------------------------
