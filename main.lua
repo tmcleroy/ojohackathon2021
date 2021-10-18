@@ -14,6 +14,9 @@ lastBulletTick = 0
 
 enemies = {}
 
+tileStars = true
+stars = {}
+
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
 ticks = 0
@@ -45,11 +48,12 @@ for i = 0,31,1 do
 	end
 end
 
---#Add random stars
-for i = 0,30,1 do
-	--#Put a random star tile in a random position on the map
-	tile(3, math.random(30), math.random(30), 62+math.random(9))
-	-- tile(3, math.random(30), math.random(30), 63)
+if tileStars then
+	--#Add random stars
+	for i = 0, 25, 1 do
+		--#Put a random star tile in a random position on the map
+		tile(3, math.random(30), math.random(30), 62+math.random(9))
+	end
 end
 
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
@@ -132,6 +136,7 @@ function update()
 		--# Local variable to check wether we can increase animation frame if player walks
 		local animate = ticks % 5 == 0
 		local shoot = ticks % 10 == 0
+		local star = ticks % 10 == 0
 		local moving = false
 		
 		-- right
@@ -204,7 +209,7 @@ function update()
 				lastBulletTick = ticks
 			end
 		end
-		
+
 		if moving then
 			if animate then
 				playerAnim=playerAnim+1
@@ -217,8 +222,26 @@ function update()
 			playerAnim=1
 		end
 
-		-- scroll the stars
-		scrollY = scrollY - 1
+		if tileStars then
+			-- scroll the stars
+			scrollY = scrollY - 1
+			scroll(3, scrollX, scrollY)
+		else
+			-- spawn star
+			if star then
+				spawnStar()
+			end
+			-- update star positions
+			for k, v in pairs(stars) do
+				stars[k].y = v.y - v.speedY
+				stars[k].x = v.x - v.speedX
+				-- cull stars that are off screen
+				if stars[k].y > 160 then
+					table.remove(stars, k)
+				end
+			end
+		end
+		
 
 		-- update player bullet positions
 		for k, v in pairs(playerBullets) do
@@ -258,8 +281,6 @@ function update()
 
 		detectCollision()
 
-		scroll(3, scrollX, scrollY)
-		
 		--# === SCREENSHAKE ===
 		
 		--# If we must apply screenshake
@@ -535,6 +556,19 @@ function draw()
 	
 	--#If we are in gameplay, display regular meteors
 	if STATE == 1 then
+
+		if not tileStars then
+			-- render stars
+			for k, v in pairs(stars) do
+				-- tile(3, v.x, v.y, 63)
+				if v.speedY == -2 then
+					spr(9, v.x, v.y)
+				else
+					spr(8, v.x, v.y)
+				end
+			end
+		end
+
 		-- render player
 		spr(playerAnim, playerX, playerY, playerFlipX)
 	
@@ -563,6 +597,23 @@ function draw()
 	--# Then display Player
 	spr(playerAnim, playerX, playerY, playerFlipX)
 	
+end
+
+function spawnStar()
+	local speed = 2
+	if math.random(0, 2) == 0 then
+		speed = 1.5
+	end
+	table.insert(
+		stars,
+		{
+			x = math.random(240),
+		  y = -12,
+		  speedX = 0,
+			-- speedY = -2
+		  speedY = -1 * speed
+		}
+	)
 end
 
 function spawnPlayerBullet()
