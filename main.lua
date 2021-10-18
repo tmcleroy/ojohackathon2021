@@ -580,7 +580,7 @@ function spawnPlayerBullet()
 	table.insert(
 		playerBullets,
 		{
-			x = playerX - 2,
+			x = playerX,
 		  y = playerY - 8,
 		  speedX = 0,
 		  speedY = 2
