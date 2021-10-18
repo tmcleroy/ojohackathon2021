@@ -19,11 +19,44 @@ stars = {}
 
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
+level = 0
 ticks = 0
 score = 0
 highscore = -1
 ticks_anim = 0
 screenshake = 0
+
+levelNames = {
+	[0] = "Tom",
+	[1] = "Tim"
+}
+enemyNames = {
+	-- [enemyType:int] = enemyName:string
+	[0] = "lead-captured",
+	[1] = "agent-selected",
+	[2] = "engagement-finalized"
+}
+levels = {
+	[0] = {
+		-- [tickNumber:int] = enemyType:int
+		[5] = 2,
+		[100] = 0,
+		[150] = 1,
+		[200] = 1,
+		[250] = 1,
+		[300] = 1,
+		[350] = 2
+	},
+	[1] = {
+		[5] = 1,
+		[100] = 2,
+		[150] = 0,
+		[200] = 1,
+		[250] = 0,
+		[300] = 1,
+		[350] = 0
+	}
+}
 
 --# ------------------------------------
 --# ----- LOAD ASSETS ------
@@ -176,7 +209,6 @@ function update()
 				playerY = playerY + 3
 			end
 		end
-
 		-- A -- player shoot
 		if btn(0) then
 			if ticks - lastBulletTick > 10 then
@@ -192,7 +224,6 @@ function update()
 				lastBulletTick = ticks
 			end
 		end
-
 		-- R -- spawn enemy type 1
 		if btn(9) then
 			if ticks - lastBulletTick > 10 then
@@ -200,13 +231,22 @@ function update()
 				lastBulletTick = ticks
 			end
 		end
-
 		-- select -- spawn enemy type 2
 		if btn(3) then
 			if ticks - lastBulletTick > 10 then
 				spawnEnemy(2)
 				lastBulletTick = ticks
 			end
+		end
+
+		-- spawn enemies according to level script
+		if levels[level][ticks] then
+			spawnEnemy(levels[level][ticks])
+			-- black out line and print enemy name
+			for i = 0, 29, 1 do
+				tile(0, i, 19, 1)
+			end
+			print(levelNames[level]..": "..enemyNames[levels[level][ticks]], 0, 19)
 		end
 
 		if moving then
