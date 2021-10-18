@@ -88,9 +88,9 @@ function init()
 			tile(0, j, i, 1)
 		end
 	end
-	
-	--#Print score label
-	--#print("score:0", 11, 0)
+
+	-- draw initial score
+	print("score:"..score, 0, 0)
 	
 	--# Play music
 	-- music("music.raw", 0)
@@ -129,7 +129,6 @@ function update()
 		local playerFlipX = playerFlipX
 		local screenshake = screenshake
 		local foesTimer = foesTimer
-		local score = score
 		local lastBulletTick = lastBulletTick
 	
 			
@@ -307,7 +306,6 @@ function update()
 		_G.playerFlipX = playerFlipX
 		_G.screenshake = screenshake
 		_G.foesTimer = foesTimer
-		_G.score = score
 		_G.lastBulletTick = lastBulletTick
 
 
@@ -356,36 +354,6 @@ function update()
 			
 				--#Display Game Over
 				print("GAME OVER", 10, 4)
-				
-				--#Display score
-				--#Different X position depending on score length
-				if score < 100 then
-					print("score:"..tostring(score), 11, 8)
-				else 
-					print("score:"..tostring(score), 10, 8)
-				end
-				
-				--#Display highscore
-				--#Did we make a new record?
-				if score > highscore then
-					
-					--#Display congratulations message
-					print("NEW RECORD!", 9, 10)
-					
-					--#Save the current highscore
-					highscore = score
-				
-				--#Else, we didn't beat the record
-				else 	
-				
-					--#Display the highscore - different X position depending on score length, so they are always aligned
-					if score < 100 then
-						print("best:"..tostring(highscore), 12, 10)
-					else 
-						print("best:"..tostring(highscore), 11, 10)
-					end
-				end	
-				
 			end
 			
 			--#Fade out slowly 
@@ -498,15 +466,9 @@ function update()
 			
 			--#Init : display title screen elements
 			if ticks_anim == 59 then
-				
-				-- --#Display title
-				-- print("METEORAIN", 10, 4)
-				
-				-- --#Display credits
-				-- print("a game by", 21, 15)
-				-- print("Dr.LUDOS", 22, 16)
-				-- print("music by", 0, 15)
-				-- print("WARLORD", 0, 16)
+				print("Customer", 11, 3)
+				print("Profile", 11, 5)
+				print("Shooter", 11, 7)
 			end
 			
 			--#Fade in slowly 
@@ -520,11 +482,11 @@ function update()
 			--#Display blinking press button to start message
 			j=ticks % 60
 			if j == 30 then
-				print("press button to start", 5, 10)
+				print("press A to start", 8, 11)
 			elseif j == 0 then
 				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
 				for i = 5,25,1 do 
-					tile(0, i, 10, 1)
+					tile(0, i, 11, 1)
 				end
 			end
 		
@@ -587,16 +549,14 @@ function draw()
 				spr(6, v.x, v.y)
 			end
 		end
-		
-	--#Else display meteor pieces for the game over screen
-	else
-		--# Display Player after meteors pieces
-		spr(playerAnim, playerX, playerY, playerFlipX)
 	end
 	
 	--# Then display Player
 	spr(playerAnim, playerX, playerY, playerFlipX)
-	
+end
+
+function drawScore()
+	print("score:"..score, 0, 0)
 end
 
 function spawnStar()
@@ -672,6 +632,8 @@ function detectCollision()
 			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(enemies, ek)
 				table.remove(playerBullets, bk)
+				score = score + 10
+				drawScore()
 			end
 		end
 	end
