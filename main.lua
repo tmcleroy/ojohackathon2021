@@ -22,6 +22,7 @@ STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen
 level = 0
 ticks = 0
 score = 0
+lives = 3
 highscore = -1
 ticks_anim = 0
 screenshake = 0
@@ -98,19 +99,21 @@ priority(0, 2, 3, 3)
 function init()
 	
 	--#Init gameplay vars
-	ticks=0
-	score=0
-	foesTimer=60
+	ticks = 0
+	lastBulletTick = 0
+	score = 0
+	lives = 3
+	foesTimer = 60
 	
 	--#Reset screenshake
-	screenshake=0
+	screenshake = 0
 	scroll(2, 0, 0)
 	
 	--# Init player vars
-	playerX=112
-	playerY=130
-	playerFlipX=nil
-	playerAnim=1
+	playerX = 112
+	playerY = 130
+	playerFlipX = nil
+	playerAnim = 1
 	
 	--#Erase the overlay messages
 	--#For every line
@@ -398,7 +401,7 @@ function update()
 			
 			--#Fade out slowly 
 			if ticks_anim < 120 and ticks_anim >= 20 then
-				fade( (ticks_anim-20)/100, 0xFFFFFF, nil, 1)
+				fade((ticks_anim-20)/100, 0xFFFFFF, nil, 1)
 			end
 			
 			--# When anim is finished, reset ticks so the blinking message starts immediatedly on the next frame
@@ -411,7 +414,9 @@ function update()
 			--#Display blinking press button to start message
 			j=ticks % 60
 			if j == 30 then
-				print("press button to restart", 4, 15)
+				print("Don't forget to vote and", 4, 13)
+				print("post high score in #codymullet", 0, 14)
+				print("Press A to restart", 5, 15)
 			elseif j == 0 then
 				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
 				for i = 4,26,1 do 
@@ -426,46 +431,6 @@ function update()
 				ticks_anim = 60
 			end
 		end	
-		
-		
-		
-		--#Animate the meteor pieces falling
-		
-		--#Compte gravity only once for all meteors
-		local gravity = ticks % 7
-		
-		--# For each foe - DONT'T optimize this loop (by using for i + locals instead of ipairs + global like we did for gameplay and rendering) as the slowdown produces a better effect on the game over screen!
-		for i, obj  in ipairs(foes) do 
-		
-			--#If the foe is active
-			if obj.active == 1 then
-			
-				--# Move foe according to its speed
-				obj.x=obj.x+obj.speedX
-				obj.y=obj.y+obj.speedY
-				
-				--# Ohh, gravity
-				if gravity == 0 then
-					obj.speedY = obj.speedY+1;
-				end
-				
-				--#If the meteor goes out of the screen
-				if obj.y > 240 then
-				
-					--# Disable the meteor
-					obj.active=0
-					
-					--# reset the meteor positions
-					obj.x=math.random(224)
-					obj.y=-16
-					obj.speedY=0
-					obj.speedX=0
-				end	
-				
-			end
-		end	
-		
-		
 	--# === GAME (RE)START FADING STATE ===	
 	elseif STATE == 3 then
 	
@@ -522,7 +487,7 @@ function update()
 			--#Display blinking press button to start message
 			j=ticks % 60
 			if j == 30 then
-				print("press A to start", 8, 11)
+				print("Press A to start", 8, 11)
 			elseif j == 0 then
 				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
 				for i = 5,25,1 do 
@@ -544,9 +509,6 @@ function update()
 end
 
 
---# ------------------------------------
---# --- RENDER SCREEN ----
---# ------------------------------------
 --# MEMO: sprites are drawn from front to bottom in BPCore-Engine
 function draw()
 	--# === OPTIMIZATION ===
@@ -556,7 +518,7 @@ function draw()
 	local playerAnim=playerAnim
 	local playerFlipX=playerFlipX
 	
-	--#If we are in gameplay, display regular meteors
+	-- gameplay
 	if STATE == 1 then
 
 		if not tileStars then
@@ -569,6 +531,11 @@ function draw()
 					spr(8, v.x, v.y)
 				end
 			end
+		end
+
+		-- render player lives
+		for i = 0, lives - 1, 1 do
+			spr(1, 222 - (18 * i), 2, nil)
 		end
 
 		-- render player
@@ -596,6 +563,9 @@ function draw()
 end
 
 function drawScore()
+	-- for i = 0, 29, 1 do
+	-- 	tile(0, i, 0, 1)
+	-- end
 	print("score:"..score, 0, 0)
 end
 
@@ -666,8 +636,30 @@ function spawnEnemy(type)
 	)
 end
 
+function lifeLost()
+	lives = lives - 1
+	if lives == 0 then
+		gameOver()
+	end
+end
+
+function gameOver()
+	for i = 0, 29, 1 do
+		tile(0, i, 19, 1)
+	end
+	print("GAME OVER", 0, 19)
+	STATE = 2
+end
+
 function detectCollision()
+	-- for each enemy
 	for ek, ev in pairs(enemies) do
+		-- check player collision (enemy collides with player)
+		if colliding(ev.x, ev.y, 16, 16,  playerX, playerY + 12, 16, 16) then
+				table.remove(enemies, ek)
+				lifeLost()
+		end
+		-- check player bullet collision (enemy gets shot)
 		for bk, bv in pairs(playerBullets) do
 			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(enemies, ek)
