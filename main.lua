@@ -414,7 +414,7 @@ function update()
 			--#Display blinking press button to start message
 			j=ticks % 60
 			if j == 30 then
-				print("Don't forget to vote and", 4, 13)
+				print("Don't forget to vote and", 3, 13)
 				print("post high score in #codymullet", 0, 14)
 				print("Press A to restart", 5, 15)
 			elseif j == 0 then
