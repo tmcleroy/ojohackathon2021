@@ -46,7 +46,7 @@ for i = 0,31,1 do
 end
 
 --#Add random stars
-for i = 0,40,1 do
+for i = 0,30,1 do
 	--#Put a random star tile in a random position on the map
 	tile(3, math.random(30), math.random(30), 62+math.random(9))
 	-- tile(3, math.random(30), math.random(30), 63)
@@ -181,10 +181,26 @@ function update()
 			end
 		end
 
-		-- B -- spawn enemy
-		if btn(1) then
+		-- L -- spawn enemy type 0
+		if btn(8) then
 			if ticks - lastBulletTick > 10 then
-				spawnEnemy()
+				spawnEnemy(0)
+				lastBulletTick = ticks
+			end
+		end
+
+		-- R -- spawn enemy type 1
+		if btn(9) then
+			if ticks - lastBulletTick > 10 then
+				spawnEnemy(1)
+				lastBulletTick = ticks
+			end
+		end
+
+		-- select -- spawn enemy type 2
+		if btn(3) then
+			if ticks - lastBulletTick > 10 then
+				spawnEnemy(2)
 				lastBulletTick = ticks
 			end
 		end
@@ -215,8 +231,25 @@ function update()
 
 		-- update enemy positions
 		for k, v in pairs(enemies) do
-			enemies[k].y = enemies[k].y - enemies[k].speedY
-			enemies[k].x = enemies[k].x - enemies[k].speedX
+			if v.type == 0 then
+				enemies[k].y = v.y - v.speedY
+				enemies[k].x = v.x - v.speedX
+			elseif v.type == 1 then
+				-- bounce off walls
+				if (v.x >= (240 - 16) and v.speedX < 0) or (v.x <= 0 and v.speedX > 0) then
+					enemies[k].speedX = v.speedX * -1
+				end
+				enemies[k].y = v.y - v.speedY
+				enemies[k].x = v.x - v.speedX
+			elseif v.type == 2 then
+				-- every n ticks, reverse x direction, makes enemy move in zigzag pattern
+				local mod = (ticks % 30)
+				if mod == 0 then
+					enemies[k].speedX	= v.speedX * -1
+				end
+				enemies[k].y = v.y - v.speedY
+				enemies[k].x = v.x - (v.speedX * (mod / 20))
+			end
 			-- cull enemies that are off screen
 			if enemies[k].y > 160 then
 				table.remove(enemies, k)
@@ -512,7 +545,13 @@ function draw()
 
 		-- render enemies
 		for k, v in pairs(enemies) do
-			spr(0, v.x, v.y)
+			if v.type == 0 then
+				spr(0, v.x, v.y)
+			elseif v.type == 1 then
+				spr(5, v.x, v.y)
+			elseif v.type == 2 then
+				spr(6, v.x, v.y)
+			end
 		end
 		
 	--#Else display meteor pieces for the game over screen
@@ -538,14 +577,40 @@ function spawnPlayerBullet()
 	)
 end
 
-function spawnEnemy()
+function spawnEnemy(type)
+	local spawnX = playerX
+	local initSpeedX = 0
+	local initSpeedY = -1
+	local randRange10 =math.random(-10, 10)
+
+	-- spawn at random x pos and move down screen at random angle
+	if type == 0 then
+		initX = math.random(240)
+		initSpeedX = (randRange10 / 10)
+	-- spawn in either top corner and move diagonally, bouncing off walls
+	elseif type == 1 then
+		if math.random(0, 1) == 0 then
+			initX = 0
+			initSpeedX = -1.8
+		else
+			initX = 240
+			initSpeedX = 1.8
+		end
+		initSpeedY = -0.5 + (randRange10 / 15)
+	-- move down screen in zig zag pattern
+	elseif type == 2 then
+		initX = math.random(20, 220)
+		initSpeedX = (randRange10 / 3)
+	end
+
 	table.insert(
 		enemies,
 		{
-			x = playerX,
+			type = type,
+			x = initX,
 		  y = -12,
-		  speedX = 0,
-		  speedY = -1
+		  speedX = initSpeedX,
+		  speedY = initSpeedY
 		}
 	)
 end
@@ -563,6 +628,7 @@ end
 
 -- https://love2d.org/forums/viewtopic.php?p=196465&sid=7893979c5233b13efed2f638e114ce87#p196465
 function colliding(x1,y1,w1,h1, x2,y2,w2,h2)
+	-- print(x1..","..y1.." -- "..x2..","..y2, 0, 19)
   return (
     x1 < x2+w2 and
     x2 < x1+w1 and
