@@ -253,9 +253,6 @@ function update()
 		end
 		-- start
 		if btn(2) then
-			if ticks - lastBulletTick > 10 then
-				spawnBoss("tim")
-			end
 		end
 
 		-- spawn enemies according to level script
@@ -348,6 +345,7 @@ function update()
 				local mod = (ticks % 40)
 				if mod == 0 then
 					boss.speedX	= boss.speedX * -1
+					spawnEnemy(0, boss.x, boss.y + 20)
 				end
 				boss.y = boss.y - boss.speedY
 				boss.x = boss.x - (boss.speedX * (mod / 20))
@@ -597,6 +595,11 @@ function draw()
 	local playerY=playerY
 	local playerAnim=playerAnim
 	local playerFlipX=playerFlipX
+	local tileStars = tileStars
+	local lives = lives
+	local playerBullets = playerBullets
+	local enemies = enemies
+	local bosses = bosses
 	
 	-- gameplay
 	if STATE == 1 then
@@ -649,9 +652,6 @@ function draw()
 end
 
 function drawScore()
-	-- for i = 0, 29, 1 do
-	-- 	tile(0, i, 0, 1)
-	-- end
 	print("score:"..score, 0, 0)
 end
 
@@ -684,10 +684,11 @@ function spawnPlayerBullet()
 	)
 end
 
-function spawnEnemy(type)
-	local spawnX = playerX
+function spawnEnemy(type, overrideX, overrideY)
 	local initSpeedX = 0
 	local initSpeedY = -1
+	local initX = 0
+	local initY = 0
 	local randRange10 = math.random(-10, 10)
 	local randRangeScreenWidth = math.random(20, 220)
 
@@ -711,12 +712,21 @@ function spawnEnemy(type)
 		initSpeedX = (randRange10 / 3)
 	end
 
+	local finalX = initX
+	local finalY = initY
+	if overrideX then
+		finalX = overrideX
+	end
+	if overrideY then
+		finalY = overrideY
+	end
+
 	table.insert(
 		enemies,
 		{
 			type = type,
-			x = initX,
-		  y = -12,
+			x = finalX,
+		  y = finalY,
 		  speedX = initSpeedX,
 		  speedY = initSpeedY
 		}
