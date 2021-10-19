@@ -9,13 +9,11 @@ local app = {
 
    spritesheets = {
       "sprites.bmp",
+      "timtomcodysprites.bmp",
+      "tim.bmp"
    },
 
-   audio = {
-      "music.raw",
-      "sfx_gameover.raw",
-      "sfx_crash.raw",
-   },
+   audio = {},
 
    scripts = {
       "main.lua",

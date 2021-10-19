@@ -28,8 +28,9 @@ ticks_anim = 0
 screenshake = 0
 
 levelNames = {
-	[0] = "Tom",
-	[1] = "Tim"
+	[0] = "Tim",
+	[1] = "Tom",
+	[2] = "Cody"
 }
 enemyNames = {
 	-- [enemyType:int] = enemyName:string
@@ -56,6 +57,15 @@ levels = {
 		[250] = 0,
 		[300] = 1,
 		[350] = 0
+	},
+	[2] = {
+		[5] = 0,
+		[100] = 1,
+		[150] = 1,
+		[200] = 2,
+		[250] = 2,
+		[300] = 0,
+		[350] = 1
 	}
 }
 
@@ -70,7 +80,7 @@ fade(1)
 txtr(0, "overlay.bmp")
 txtr(1, "tiles.bmp")
 txtr(2, "tiles.bmp")
-txtr(4, "sprites.bmp")
+
 
 -- black out screen
 -- fill enough vertical lines for a seamless vertical scroll
@@ -97,7 +107,8 @@ priority(0, 2, 3, 3)
 --# ------- GAME INIT --------
 --# ----------------------------------
 function init()
-	
+	-- load game sprites
+	-- txtr(4, "sprites.bmp")
 	--#Init gameplay vars
 	ticks = 0
 	lastBulletTick = 0
@@ -465,7 +476,7 @@ function update()
 	
 		--#If the animation isn't finished
 		if ticks_anim > 0 then
-		
+			drawTimTomCody(10, 10)
 			--#Decrease countdown
 			ticks_anim = ticks_anim-1
 			
@@ -483,6 +494,7 @@ function update()
 
 		--#Else the countdown is finished, so we can start the game if needed
 		else 
+			drawTimTomCody(10, 10)
 		
 			--#Display blinking press button to start message
 			j=ticks % 60
@@ -501,6 +513,8 @@ function update()
 				--#Start the game! (using a fading handled by a separate state)
 				STATE=3
 				ticks_anim = 60
+				-- load game sprites after done rendering timtomcody
+				txtr(4, "sprites.bmp")
 			end
 		end	
 		
@@ -508,6 +522,30 @@ function update()
 	
 end
 
+function drawBigSprites(name, x, y)
+	txtr(4, name)
+	for i = 0, 15, 1 do
+		yPlus = 0
+		if i < 4 then
+			yPlus = 0
+		elseif i < 8 then
+			yPlus = 16 
+		elseif i < 12 then
+			yPlus = 32
+		elseif i < 16 then
+			yPlus = 48
+		end
+		spr(i, x + ((i % 4) * 16), y + yPlus)
+	end
+end
+
+function drawTimTomCody(x, y)
+	drawBigSprites("timtomcodysprites.bmp", x, y)
+	-- -- test
+	-- txtr(4, "tim.bmp")
+	-- spr(0, 10, 10);spr(1, 26, 10)
+	-- spr(2, 10, 26);spr(3, 26, 26)
+end
 
 --# MEMO: sprites are drawn from front to bottom in BPCore-Engine
 function draw()
