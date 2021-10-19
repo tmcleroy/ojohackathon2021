@@ -20,7 +20,7 @@ stars = {}
 
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
-level = 2
+level = 0
 ticks = 0
 score = 0
 lives = 3
@@ -29,9 +29,9 @@ ticks_anim = 0
 screenshake = 0
 
 levelNames = {
-	[0] = "Tim",
-	[1] = "Tom",
-	[2] = "Cody"
+	[0] = "TIM",
+	[1] = "TOM",
+	[2] = "CODY"
 }
 enemyNames = {
 	-- [enemyType:int] = enemyName:string
@@ -42,28 +42,28 @@ enemyNames = {
 levels = {
 	[0] = {
 		-- [tickNumber:int] = enemyType:int
-		[100] = -1,
-		-- [150] = 1,
-		-- [200] = 1,
-		-- [250] = 1,
-		-- [300] = 1,
-		-- [350] = 2
+		[100] = 0,
+		[150] = 1,
+		[200] = 2,
+		[250] = 2,
+		[300] = 0,
+		[350] = -1
 	},
 	[1] = {
-		[100] = -1,
-		-- [150] = 0,
-		-- [200] = 1,
-		-- [250] = 0,
-		-- [300] = 1,
-		-- [350] = 0
+		[100] = 0,
+		[150] = 1,
+		[200] = 2,
+		[250] = 2,
+		[300] = 0,
+		[350] = -1
 	},
 	[2] = {
-		[100] = -1,
-		-- [150] = 1,
-		-- [200] = 2,
-		-- [250] = 2,
-		-- [300] = 0,
-		-- [350] = 1
+		[100] = 0,
+		[150] = 1,
+		[200] = 2,
+		[250] = 2,
+		[300] = 0,
+		[350] = -1
 	}
 }
 
@@ -260,14 +260,15 @@ function update()
 
 		-- spawn enemies according to level script
 		if levels[level][ticks] then
-			if levels[level][ticks] == -1 then
-				spawnBoss(level)
-			else
-				spawnEnemy(levels[level][ticks])
-				-- black out line and print enemy name
-				for i = 0, 29, 1 do
+			-- black out line where status is printed
+			for i = 0, 29, 1 do
 					tile(0, i, 19, 1)
 				end
+			if levels[level][ticks] == -1 then
+				spawnBoss(level)
+				print("DEFEAT "..levelNames[level].."!!!", 0, 19)
+			else
+				spawnEnemy(levels[level][ticks])
 				print(levelNames[level]..": "..enemyNames[levels[level][ticks]], 0, 19)
 			end
 		end
@@ -731,7 +732,7 @@ function spawnBoss(level)
 	local config = {
 		[0] = {
 			spriteIndex = 10,
-			x = 145,
+			x = 120,
 			y = 16,
 			speedX = 4,
 			speedY = 0,
@@ -741,7 +742,7 @@ function spawnBoss(level)
 			spriteIndex = 14,
 			x = math.random(20, 220),
 			y = 8,
-			speedX = 1,
+			speedX = 1.5,
 			speedY = -4,
 			hp = 200
 		},
