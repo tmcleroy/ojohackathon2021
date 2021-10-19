@@ -9,8 +9,7 @@ local app = {
 
    spritesheets = {
       "sprites.bmp",
-      "timtomcodysprites.bmp",
-      "tim.bmp"
+      "timtomcodysprites.bmp"
    },
 
    audio = {},

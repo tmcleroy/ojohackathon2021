@@ -13,6 +13,7 @@ playerBullets = {}
 lastBulletTick = 0
 
 enemies = {}
+bosses = {}
 
 tileStars = true
 stars = {}
@@ -41,16 +42,14 @@ enemyNames = {
 levels = {
 	[0] = {
 		-- [tickNumber:int] = enemyType:int
-		[5] = 2,
-		[100] = 0,
-		[150] = 1,
-		[200] = 1,
-		[250] = 1,
-		[300] = 1,
-		[350] = 2
+		[100] = -1,
+		-- [150] = 1,
+		-- [200] = 1,
+		-- [250] = 1,
+		-- [300] = 1,
+		-- [350] = 2
 	},
 	[1] = {
-		[5] = 1,
 		[100] = 2,
 		[150] = 0,
 		[200] = 1,
@@ -59,7 +58,6 @@ levels = {
 		[350] = 0
 	},
 	[2] = {
-		[5] = 0,
 		[100] = 1,
 		[150] = 1,
 		[200] = 2,
@@ -177,6 +175,7 @@ function update()
 		local screenshake = screenshake
 		local foesTimer = foesTimer
 		local lastBulletTick = lastBulletTick
+		local bosses = bosses
 	
 			
 		--# Local variable to check wether we can increase animation frame if player walks
@@ -252,15 +251,25 @@ function update()
 				lastBulletTick = ticks
 			end
 		end
+		-- start
+		if btn(2) then
+			if ticks - lastBulletTick > 10 then
+				spawnBoss("tim")
+			end
+		end
 
 		-- spawn enemies according to level script
 		if levels[level][ticks] then
-			spawnEnemy(levels[level][ticks])
-			-- black out line and print enemy name
-			for i = 0, 29, 1 do
-				tile(0, i, 19, 1)
+			if levels[level][ticks] == -1 then
+				spawnBoss(level)
+			else
+				spawnEnemy(levels[level][ticks])
+				-- black out line and print enemy name
+				for i = 0, 29, 1 do
+					tile(0, i, 19, 1)
+				end
+				print(levelNames[level]..": "..enemyNames[levels[level][ticks]], 0, 19)
 			end
-			print(levelNames[level]..": "..enemyNames[levels[level][ticks]], 0, 19)
 		end
 
 		if moving then
@@ -332,6 +341,23 @@ function update()
 			end
 		end
 
+		for k, boss in pairs(bosses) do
+			if boss.level == 0 then
+				local mod = (ticks % 40)
+				if mod == 0 then
+					boss.speedX	= boss.speedX * -1
+				end
+				boss.y = boss.y - boss.speedY
+				boss.x = boss.x - (boss.speedX * (mod / 20))
+			elseif boss.level == 1 then
+			elseif boss.level == 2 then
+			end
+
+			-- -- update boss position
+			-- boss.x = boss.x - boss.speedX
+			-- boss.y = boss.y - boss.speedY
+		end
+
 		detectCollision()
 
 		--# === SCREENSHAKE ===
@@ -361,6 +387,7 @@ function update()
 		_G.screenshake = screenshake
 		_G.foesTimer = foesTimer
 		_G.lastBulletTick = lastBulletTick
+		_G.bosses = bosses
 
 
 	--# === GAME OVER STATE ===	
@@ -541,10 +568,6 @@ end
 
 function drawTimTomCody(x, y)
 	drawBigSprites("timtomcodysprites.bmp", x, y)
-	-- -- test
-	-- txtr(4, "tim.bmp")
-	-- spr(0, 10, 10);spr(1, 26, 10)
-	-- spr(2, 10, 26);spr(3, 26, 26)
 end
 
 --# MEMO: sprites are drawn from front to bottom in BPCore-Engine
@@ -593,6 +616,12 @@ function draw()
 			elseif v.type == 2 then
 				spr(6, v.x, v.y)
 			end
+		end
+
+		-- render boss
+		for k, boss in pairs(bosses) do
+			spr(boss.spriteIndex + 0, boss.x, boss.y);spr(boss.spriteIndex + 1, boss.x + 16, boss.y)
+			spr(boss.spriteIndex + 2, boss.x, boss.y + 16);spr(boss.spriteIndex + 3, boss.x + 16, boss.y + 16)
 		end
 	end
 	
@@ -670,6 +699,53 @@ function spawnEnemy(type)
 		  y = -12,
 		  speedX = initSpeedX,
 		  speedY = initSpeedY
+		}
+	)
+end
+
+function spawnBoss(level)
+	local spawnX = playerX
+	local initSpeedX = 0
+	local initSpeedY = -1
+	local randRange10 =math.random(-10, 10)
+
+	local config = {
+		[0] = {
+			spriteIndex = 10,
+			x = 145,
+			y = 16,
+			speedX = 4,
+			speedY = 0,
+			hp = 100
+		},
+		[1] = {
+			spriteIndex = 14,
+			x = 0,
+			y = 0,
+			speedX = 1,
+			speedY = -1,
+			hp = 200
+		},
+		[2] = {
+			spriteIndex = 18,
+			x = 0,
+			y = 0,
+			speedX = 1,
+			speedY = -1,
+			hp = 300
+		}
+	}
+
+	table.insert(
+		bosses, 
+		{
+			level = level,
+			spriteIndex = config[level].spriteIndex,
+			x = config[level].x,
+			y = config[level].y,
+			speedX = config[level].speedX,
+			speedY = config[level].speedY,
+			hp = config[level].hp
 		}
 	)
 end
