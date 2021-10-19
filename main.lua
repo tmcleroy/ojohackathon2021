@@ -20,7 +20,7 @@ stars = {}
 
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
-level = 0
+level = 2
 ticks = 0
 score = 0
 lives = 3
@@ -50,20 +50,20 @@ levels = {
 		-- [350] = 2
 	},
 	[1] = {
-		[100] = 2,
-		[150] = 0,
-		[200] = 1,
-		[250] = 0,
-		[300] = 1,
-		[350] = 0
+		[100] = -1,
+		-- [150] = 0,
+		-- [200] = 1,
+		-- [250] = 0,
+		-- [300] = 1,
+		-- [350] = 0
 	},
 	[2] = {
-		[100] = 1,
-		[150] = 1,
-		[200] = 2,
-		[250] = 2,
-		[300] = 0,
-		[350] = 1
+		[100] = -1,
+		-- [150] = 1,
+		-- [200] = 2,
+		-- [250] = 2,
+		-- [300] = 0,
+		-- [350] = 1
 	}
 }
 
@@ -343,6 +343,7 @@ function update()
 
 		for k, boss in pairs(bosses) do
 			if boss.level == 0 then
+				-- wobble in place
 				local mod = (ticks % 40)
 				if mod == 0 then
 					boss.speedX	= boss.speedX * -1
@@ -350,12 +351,29 @@ function update()
 				boss.y = boss.y - boss.speedY
 				boss.x = boss.x - (boss.speedX * (mod / 20))
 			elseif boss.level == 1 then
+				-- bounce around screen
+				if (boss.x >= (240 - 32) and boss.speedX < 0) or (boss.x <= 0 and boss.speedX > 0) then
+					boss.speedX = boss.speedX * -1
+				end
+				if (boss.y >= (160 - 32) and boss.speedY < 0) or (boss.y <= 0 and boss.speedY > 0) then
+					boss.speedY = boss.speedY * -1
+				end
+				boss.y = boss.y - boss.speedY
+				boss.x = boss.x - boss.speedX
 			elseif boss.level == 2 then
+				local mod = (ticks % 40)
+				if mod == 0 then
+					boss.speedX	= boss.speedX * -1
+				end
+				if (boss.x >= (240 - 32) and boss.speedX < 0) or (boss.x <= 0 and boss.speedX > 0) then
+					boss.speedX = boss.speedX * -1
+				end
+				if (boss.y >= (160 - 32) and boss.speedY < 0) or (boss.y <= 0 and boss.speedY > 0) then
+					boss.speedY = boss.speedY * -1
+				end
+				boss.y = boss.y - (boss.speedY * (mod / 20))
+				boss.x = boss.x - (boss.speedX * (mod / 20))
 			end
-
-			-- -- update boss position
-			-- boss.x = boss.x - boss.speedX
-			-- boss.y = boss.y - boss.speedY
 		end
 
 		detectCollision()
@@ -669,11 +687,12 @@ function spawnEnemy(type)
 	local spawnX = playerX
 	local initSpeedX = 0
 	local initSpeedY = -1
-	local randRange10 =math.random(-10, 10)
+	local randRange10 = math.random(-10, 10)
+	local randRangeScreenWidth = math.random(20, 220)
 
 	-- spawn at random x pos and move down screen at random angle
 	if type == 0 then
-		initX = math.random(240)
+		initX = randRangeScreenWidth
 		initSpeedX = (randRange10 / 10)
 	-- spawn in either top corner and move diagonally, bouncing off walls
 	elseif type == 1 then
@@ -687,7 +706,7 @@ function spawnEnemy(type)
 		initSpeedY = -0.5 + (randRange10 / 15)
 	-- move down screen in zig zag pattern
 	elseif type == 2 then
-		initX = math.random(20, 220)
+		initX = randRangeScreenWidth
 		initSpeedX = (randRange10 / 3)
 	end
 
@@ -720,18 +739,18 @@ function spawnBoss(level)
 		},
 		[1] = {
 			spriteIndex = 14,
-			x = 0,
-			y = 0,
+			x = math.random(20, 220),
+			y = 8,
 			speedX = 1,
-			speedY = -1,
+			speedY = -4,
 			hp = 200
 		},
 		[2] = {
 			spriteIndex = 18,
-			x = 0,
-			y = 0,
-			speedX = 1,
-			speedY = -1,
+			x = 130,
+			y = 8,
+			speedX = 3,
+			speedY = -2,
 			hp = 300
 		}
 	}
