@@ -4,6 +4,7 @@ player = {
 	x = 0,
 	y = -16,
 	animState = 0,
+	bullets = {}
 }
 
 bgScroll = {
@@ -11,7 +12,6 @@ bgScroll = {
 	y = 0
 }
 
-playerBullets = {}
 lastBulletTick = 0
 lastPlayerHitTick = 0
 
@@ -248,11 +248,11 @@ function update()
 		scroll(3, bgScroll.x, bgScroll.y)
 
 			-- update player bullet positions
-		for k, v in pairs(playerBullets) do
-			playerBullets[k].y = playerBullets[k].y - playerBullets[k].speedY
+		for k, v in pairs(player.bullets) do
+			player.bullets[k].y = player.bullets[k].y - player.bullets[k].speedY
 			-- cull player bullets that are off screen
-			if playerBullets[k].y < -12 then
-				table.remove(playerBullets, k)
+			if player.bullets[k].y < -12 then
+				table.remove(player.bullets, k)
 			end
 		end
 
@@ -477,7 +477,6 @@ function draw()
 	--# Make local vars with the same names a the global one for faster access (no need to copy back values at the end of the function, as it only reads them)
 	local player = player
 	local lives = lives
-	local playerBullets = playerBullets
 	local enemies = enemies
 	local bosses = bosses
 	
@@ -493,7 +492,7 @@ function draw()
 		spr(player.animState, player.x, player.y)
 	
 		-- render player bullets
-		for k, v in pairs(playerBullets) do
+		for k, v in pairs(player.bullets) do
 			spr(8, v.x, v.y)
 		end
 
@@ -522,7 +521,7 @@ end
 
 function spawnPlayerBullet()
 	table.insert(
-		playerBullets,
+		player.bullets,
 		{
 			x = player.x,
 		  y = player.y - 8,
@@ -682,9 +681,9 @@ function detectCollision()
 			end
 		end
 		-- check boss bullet collision (boss gets shot)
-		for bk, bv in pairs(playerBullets) do
+		for bk, bv in pairs(player.bullets) do
 			if colliding(ev.x + 10, ev.y + 8, 7, 20,  bv.x, bv.y + 12, 16, 16) then
-				table.remove(playerBullets, bk)
+				table.remove(player.bullets, bk)
 				bossHit()
 				drawScore()
 			end
@@ -698,10 +697,10 @@ function detectCollision()
 				playerHit()
 		end
 		-- check player bullet collision (enemy gets shot)
-		for bk, bv in pairs(playerBullets) do
+		for bk, bv in pairs(player.bullets) do
 			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(enemies, ek)
-				table.remove(playerBullets, bk)
+				table.remove(player.bullets, bk)
 				score = score + 10 -- 10 points per enemy hit
 				drawScore()
 			end
