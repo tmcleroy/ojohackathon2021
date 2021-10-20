@@ -29,6 +29,12 @@ score = 0
 lives = 3
 ticks_anim = 0
 
+levelMusic = {
+	[0] = "music2.raw",
+	[1] = "music1.raw",
+	[2] = "music3.raw"
+}
+
 levelNames = {
 	[0] = "TIM",
 	[1] = "TOM",
@@ -48,26 +54,44 @@ levels = {
 		-- [tickNumber:int] = enemyType:int
 		[100] = 0,
 		[150] = 1,
-		[200] = 2,
-		[250] = 2,
-		[300] = 0,
-		[350] = -1
+		[200] = 0,
+		[250] = 1,
+		[300] = 1,
+		[325] = 1,
+		[350] = 1,
+		[400] = 0,
+		[410] = 0,
+		[420] = 0,
+		[480] = 1,
+		[500] = -1
 	},
 	[1] = {
 		[100] = 0,
 		[150] = 1,
-		[200] = 2,
+		[200] = 0,
 		[250] = 2,
-		[300] = 0,
-		[350] = -1
+		[300] = 2,
+		[325] = 1,
+		[350] = 2,
+		[400] = 0,
+		[410] = 0,
+		[420] = 0,
+		[480] = 2,
+		[500] = -1
 	},
 	[2] = {
 		[100] = 0,
-		[150] = 1,
-		[200] = 2,
+		[150] = 2,
+		[200] = 0,
 		[250] = 2,
-		[300] = 0,
-		[350] = -1
+		[300] = 2,
+		[325] = 0,
+		[350] = 2,
+		[400] = 0,
+		[410] = 0,
+		[420] = 0,
+		[480] = 2,
+		[500] = -1
 	}
 }
 
@@ -124,7 +148,7 @@ function init()
 
 	-- draw initial score
 	print("score:"..score, 0, 0)	
-	music("music1.raw", 0)
+	-- music("music1.raw", 0)
 end
 
 function update()
@@ -360,9 +384,9 @@ function update()
 			--#Display blinking press button to start message
 			j=ticks % 60
 			if j == 30 then
-				print("Don't forget to vote and", 3, 13)
-				print("post high score in #codymullet", 0, 14)
-				print("Press B to restart", 5, 15)
+				print("Don't forget to vote and", 3, 7)
+				print("post high score in #codymullet", 0, 9)
+				print("Press B to restart", 5, 11)
 			elseif j == 0 then
 				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
 				for i = 4,26,1 do 
@@ -401,6 +425,7 @@ function update()
 			else 
 				gameState = 1
 				level = 0
+				music(levelMusic[level])
 			end
 
 		end
@@ -644,11 +669,13 @@ function bossHit()
 			if level < 2 then
 				updateStatus(levelNames[level].." DEFEATED!!!")
 				level = level + 1
+				music(levelMusic[level])
 			else
 				gameOver(true)
 			end
 		end
 	end
+	drawScore()
 end
 
 function playerHit()
@@ -658,6 +685,12 @@ function playerHit()
 	if lives == 0 then
 		gameOver(false)
 	end
+end
+
+function enemyHit()
+	score = score + 10 -- 10 points per enemy hit
+	sound("enemyhit.raw")
+	drawScore()
 end
 
 function gameOver(success)
@@ -694,7 +727,6 @@ function detectCollision()
 			if colliding(ev.x + 10, ev.y + 8, 7, 20,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(player.bullets, bk)
 				bossHit()
-				drawScore()
 			end
 		end
 	end
@@ -710,8 +742,7 @@ function detectCollision()
 			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(enemies, ek)
 				table.remove(player.bullets, bk)
-				score = score + 10 -- 10 points per enemy hit
-				drawScore()
+				enemyHit()
 			end
 		end
 	end

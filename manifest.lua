@@ -14,6 +14,9 @@ local app = {
 
    audio = {
       "music1.raw",
+      "music2.raw",
+      "music3.raw",
+      "enemyhit.raw",
       "timhit.raw",
       "tomhit.raw",
       "codyhit.raw",
@@ -26,7 +29,6 @@ local app = {
    },
 
    misc = {
-
    }
 }
 
