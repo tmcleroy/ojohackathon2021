@@ -523,6 +523,7 @@ function drawScore()
 end
 
 function spawnPlayerBullet()
+	sound("shoot.raw")
 	table.insert(
 		player.bullets,
 		{
@@ -651,7 +652,7 @@ function bossHit()
 end
 
 function playerHit()
-	sound("sfx_crash.raw")
+	sound("explode.raw")
 	lastPlayerHitTick = ticks
 	lives = lives - 1
 	if lives == 0 then

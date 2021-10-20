@@ -17,7 +17,8 @@ local app = {
       "timhit.raw",
       "tomhit.raw",
       "codyhit.raw",
-      "sfx_crash.raw"
+      "shoot.raw",
+      "explode.raw"
    },
 
    scripts = {
