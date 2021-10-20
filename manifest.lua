@@ -12,7 +12,10 @@ local app = {
       "timtomcodysprites.bmp"
    },
 
-   audio = {},
+   audio = {
+      "music1.raw",
+      "sfx_crash.raw"
+   },
 
    scripts = {
       "main.lua",

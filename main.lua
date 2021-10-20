@@ -11,6 +11,7 @@ scrollY = 0
 
 playerBullets = {}
 lastBulletTick = 0
+lastPlayerHitTick = 0
 
 enemies = {}
 bosses = {}
@@ -20,7 +21,7 @@ stars = {}
 
 --# Gameplay
 STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
-level = 0
+level = 1
 ticks = 0
 score = 0
 lives = 3
@@ -111,6 +112,8 @@ function init()
 	ticks = 0
 	lastBulletTick = 0
 	score = 0
+	enemies = {}
+	bosses = {}
 	lives = 3
 	foesTimer = 60
 	
@@ -138,7 +141,7 @@ function init()
 	print("score:"..score, 0, 0)
 	
 	--# Play music
-	-- music("music.raw", 0)
+	music("music1.raw", 0)
 end
 
 
@@ -339,18 +342,22 @@ function update()
 			end
 		end
 
+		local mod40 = (ticks % 40)
+		local mod80 = (ticks % 40)
 		for k, boss in pairs(bosses) do
 			if boss.level == 0 then
-				-- wobble in place
-				local mod = (ticks % 40)
-				if mod == 0 then
+				-- wobble at top of screen
+				if mod40 == 0 then
 					boss.speedX	= boss.speedX * -1
 					spawnEnemy(0, boss.x, boss.y + 20)
 				end
 				boss.y = boss.y - boss.speedY
-				boss.x = boss.x - (boss.speedX * (mod / 20))
+				boss.x = boss.x - (boss.speedX * (mod40 / 20))
 			elseif boss.level == 1 then
 				-- bounce around screen
+				if mod80 == 0 then
+					spawnEnemy(1, boss.x, boss.y + 20)
+				end
 				if (boss.x >= (240 - 32) and boss.speedX < 0) or (boss.x <= 0 and boss.speedX > 0) then
 					boss.speedX = boss.speedX * -1
 				end
@@ -360,9 +367,10 @@ function update()
 				boss.y = boss.y - boss.speedY
 				boss.x = boss.x - boss.speedX
 			elseif boss.level == 2 then
-				local mod = (ticks % 40)
-				if mod == 0 then
+				-- combo of both movement types
+				if mod40 == 0 then
 					boss.speedX	= boss.speedX * -1
+					spawnEnemy(2, boss.x, boss.y + 20)
 				end
 				if (boss.x >= (240 - 32) and boss.speedX < 0) or (boss.x <= 0 and boss.speedX > 0) then
 					boss.speedX = boss.speedX * -1
@@ -370,8 +378,8 @@ function update()
 				if (boss.y >= (160 - 32) and boss.speedY < 0) or (boss.y <= 0 and boss.speedY > 0) then
 					boss.speedY = boss.speedY * -1
 				end
-				boss.y = boss.y - (boss.speedY * (mod / 20))
-				boss.x = boss.x - (boss.speedX * (mod / 20))
+				boss.y = boss.y - (boss.speedY * (mod40 / 20))
+				boss.x = boss.x - (boss.speedX * (mod40 / 20))
 			end
 		end
 
@@ -705,7 +713,7 @@ function spawnEnemy(type, overrideX, overrideY)
 			initX = 240
 			initSpeedX = 1.8
 		end
-		initSpeedY = -0.5 + (randRange10 / 15)
+		initSpeedY = -1 - (math.random(0, 10) / 10)
 	-- move down screen in zig zag pattern
 	elseif type == 2 then
 		initX = randRangeScreenWidth
@@ -781,6 +789,8 @@ function spawnBoss(level)
 end
 
 function lifeLost()
+	sound("sfx_crash.raw")
+	lastPlayerHitTick = ticks
 	lives = lives - 1
 	if lives == 0 then
 		gameOver()
@@ -796,6 +806,15 @@ function gameOver()
 end
 
 function detectCollision()
+	for bk, bv in pairs(bosses) do
+		-- check player collision (enemy collides with boss)
+		if (ticks - lastPlayerHitTick) > 30 then
+			if colliding(bv.x + 10, bv.y + 8, 7, 20,  playerX, playerY, 16, 16) then
+					-- table.remove(enemies, ek)
+					lifeLost()
+			end
+		end
+	end
 	-- for each enemy
 	for ek, ev in pairs(enemies) do
 		-- check player collision (enemy collides with player)
