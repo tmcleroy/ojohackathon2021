@@ -615,7 +615,7 @@ function spawnBoss(level)
 	local config = {
 		[0] = {
 			spriteIndex = 10,
-			x = 120,
+			x = 150,
 			y = 16,
 			speedX = 4,
 			speedY = 0,
