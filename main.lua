@@ -40,14 +40,11 @@ levelNames = {
 	[1] = "TOM",
 	[2] = "CODY"
 }
--- message - all have (0)
--- message-handling-requested - only tim and tom have (1)
--- consumer-app-opened - only tom and cody have (2)
 enemyNames = {
 	-- [enemyType:int] = enemyName:string
-	[0] = "message",
-	[1] = "message-handling-requested",
-	[2] = "consumer-app-opened"
+	[0] = "message", -- everyone has
+	[1] = "message-handling-requested", -- only tim and tom have
+	[2] = "consumer-app-opened" -- only tom and cody have
 }
 levels = {
 	[0] = {
@@ -121,13 +118,7 @@ end
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
 priority(0, 2, 3, 3)
 
---# ----------------------------------
---# ------- GAME INIT --------
---# ----------------------------------
 function init()
-	-- load game sprites
-	-- txtr(4, "sprites.bmp")
-	--#Init gameplay vars
 	ticks = 0
 	lastBulletTick = 0
 	score = 0
@@ -148,7 +139,6 @@ function init()
 
 	-- draw initial score
 	print("score:"..score, 0, 0)	
-	-- music("music1.raw", 0)
 end
 
 function update()
@@ -156,22 +146,12 @@ function update()
 
 	if ticks == 1 then
 		lastBulletTick = 1
-	elseif ticks > 3601 then -- reset every 60 seconds (assuming 60fps performance)
+	elseif ticks > 3601 then -- reset every 60 seconds (assuming 60fps performance (lol))
 		ticks = 1
 		lastBulletTick = 1
 	end
 
-	--#OPTIMIZATION: make a local var with the same name as the global one, now that we won't be modifying it anymore but we'll read it quite often in the rest of the script / main loop
-	local ticks=ticks
-
 	if gameState == 1 then
-		--# Make local vars with the same names as the global ones, then we'll copy back the values from local to global vars at the end of the main loop
-		local player = player
-		local bgScroll = bgScroll
-		local lastBulletTick = lastBulletTick
-		local bosses = bosses
-	
-		--# Local variable to check wether we can increase animation frame if player walks
 		local animate = ticks % 5 == 0
 		local shoot = ticks % 10 == 0
 		local star = ticks % 10 == 0
@@ -221,31 +201,6 @@ function update()
 			end
 		end
 
-		-- -- L -- spawn enemy type 0
-		-- if btn(8) then
-		-- 	if ticks - lastBulletTick > 10 then
-		-- 		spawnEnemy(0)
-		-- 		lastBulletTick = ticks
-		-- 	end
-		-- end
-		-- -- R -- spawn enemy type 1
-		-- if btn(9) then
-		-- 	if ticks - lastBulletTick > 10 then
-		-- 		spawnEnemy(1)
-		-- 		lastBulletTick = ticks
-		-- 	end
-		-- end
-		-- -- select -- spawn enemy type 2
-		-- if btn(3) then
-		-- 	if ticks - lastBulletTick > 10 then
-		-- 		spawnEnemy(2)
-		-- 		lastBulletTick = ticks
-		-- 	end
-		-- end
-		-- -- start
-		-- if btn(2) then
-		-- end
-
 		-- animation
 		if moving then
 			if animate then
@@ -274,7 +229,7 @@ function update()
 		bgScroll.y = bgScroll.y - 1
 		scroll(3, bgScroll.x, bgScroll.y)
 
-			-- update player bullet positions
+		-- update player bullet positions
 		for k, v in pairs(player.bullets) do
 			player.bullets[k].y = player.bullets[k].y - player.bullets[k].speedY
 			-- cull player bullets that are off screen
@@ -353,13 +308,6 @@ function update()
 		end
 
 		detectCollision()
-		
-		--# === OPTIMIZATION === 
-		--# Copy back the values from local to global vars with the same name at the end of the main loop (for gameplay only, other states are not so time critical so we didn't optimize them. And for gameover I actually use slowdown voluntarily for a more dramatic effect!)
-		_G.player = player
-		_G.bgScroll = bgScroll
-		_G.lastBulletTick = lastBulletTick
-		_G.bosses = bosses
 	-- game over
 	elseif gameState == 2 then
 	
@@ -429,9 +377,7 @@ function update()
 			end
 
 		end
-	
-	
-	--# === TITLE SCREEN gameState ===	
+	-- title screen
 	elseif gameState == 0 then
 	
 		--#If the animation isn't finished
@@ -501,13 +447,6 @@ function drawTimTomCody(x, y)
 end
 
 function draw()
-	--# === OPTIMIZATION ===
-	--# Make local vars with the same names a the global one for faster access (no need to copy back values at the end of the function, as it only reads them)
-	local player = player
-	local lives = lives
-	local enemies = enemies
-	local bosses = bosses
-	
 	-- gameplay
 	if gameState == 1 then
 
