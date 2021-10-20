@@ -14,6 +14,9 @@ local app = {
 
    audio = {
       "music1.raw",
+      "timhit.raw",
+      "tomhit.raw",
+      "codyhit.raw",
       "sfx_crash.raw"
    },
 

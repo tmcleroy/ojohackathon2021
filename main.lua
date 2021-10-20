@@ -34,11 +34,14 @@ levelNames = {
 	[1] = "TOM",
 	[2] = "CODY"
 }
+-- message - all have (0)
+-- message-handling-requested - only tim and tom have (1)
+-- consumer-app-opened - only tom and cody have (2)
 enemyNames = {
 	-- [enemyType:int] = enemyName:string
-	[0] = "lead-captured",
-	[1] = "agent-selected",
-	[2] = "engagement-finalized"
+	[0] = "message",
+	[1] = "message-handling-requested",
+	[2] = "consumer-app-opened"
 }
 levels = {
 	[0] = {
@@ -590,7 +593,8 @@ function spawnBoss(level)
 			y = 16,
 			speedX = 4,
 			speedY = 0,
-			hp = 500
+			hp = 500,
+			sound = "timhit.raw"
 		},
 		[1] = {
 			spriteIndex = 14,
@@ -598,7 +602,8 @@ function spawnBoss(level)
 			y = 8,
 			speedX = 1.5,
 			speedY = -4,
-			hp = 600
+			hp = 600,
+			sound = "tomhit.raw"
 		},
 		[2] = {
 			spriteIndex = 18,
@@ -606,7 +611,8 @@ function spawnBoss(level)
 			y = 8,
 			speedX = 3,
 			speedY = -2,
-			hp = 700
+			hp = 700,
+			sound = "codyhit.raw"
 		}
 	}
 
@@ -619,13 +625,15 @@ function spawnBoss(level)
 			y = config[level].y,
 			speedX = config[level].speedX,
 			speedY = config[level].speedY,
-			hp = config[level].hp
+			hp = config[level].hp,
+			sound = config[level].sound
 		}
 	)
 end
 
 function bossHit()
 	for k, v in pairs(bosses) do
+		sound(v.sound)
 		score = score + 10 -- 10 points per hit
 		v.hp = v.hp - 50 -- 50 hp loss per hit
 		if v.hp <= 0 then -- boss defeated
