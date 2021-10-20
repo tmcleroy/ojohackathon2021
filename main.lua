@@ -1,12 +1,15 @@
 -- gba screen res 240x160
 
-playerX = 0
-playerY = -16
-playerAnim = 0
-playerFlipX = nil
+player = {
+	x = 0,
+	y = -16,
+	animState = 0,
+}
 
-scrollX = 0
-scrollY = 0
+bgScroll = {
+	x = 0,
+	y = 0
+}
 
 playerBullets = {}
 lastBulletTick = 0
@@ -65,10 +68,6 @@ levels = {
 	}
 }
 
---# ------------------------------------
---# ----- LOAD ASSETS ------
---# ------------------------------------
-
 --# Hide the screen
 fade(1)
 
@@ -80,18 +79,16 @@ txtr(2, "tiles.bmp")
 
 -- black out screen
 -- fill enough vertical lines for a seamless vertical scroll
-for i = 0,31,1 do 
-	-- horizontal columns
-	for j = 0,29,1 do 
-		-- black tile
-		tile(3, j, i, 62)
+for i = 0, 31, 1 do 
+	for j = 0, 29, 1 do 
+		tile(3, j, i, 62) -- black tile
 	end
 end
 
---#Add random stars
+-- randomly place stars
+-- gba will loop the scrolling tile layer for the appearance of endless stars passing by as the ship moves
 for i = 0, 25, 1 do
-	--#Put a random star tile in a random position on the map
-	tile(3, math.random(30), math.random(30), 62+math.random(9))
+	tile(3, math.random(30), math.random(30), 62+math.random(9)) -- random star tile
 end
 
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
@@ -111,10 +108,9 @@ function init()
 	bosses = {}
 	lives = 3
 	
-	playerX = 112
-	playerY = 130
-	playerFlipX = nil
-	playerAnim = 1
+	player.x = 112
+	player.y = 130
+	player.animState = 1
 	
 	-- blank screen
 	for i = 0, 19, 1 do 
@@ -143,12 +139,8 @@ function update()
 
 	if gameState == 1 then
 		--# Make local vars with the same names as the global ones, then we'll copy back the values from local to global vars at the end of the main loop
-		local playerX = playerX
-		local playerY = playerY
-		local scrollX = scrollX
-		local scrollY = scrollY
-		local playerAnim = playerAnim
-		local playerFlipX = playerFlipX
+		local player = player
+		local bgScroll = bgScroll
 		local lastBulletTick = lastBulletTick
 		local bosses = bosses
 	
@@ -161,39 +153,37 @@ function update()
 		-- left
 		if btn(4) then
 			moving = true
-			if playerX <= -3 then
-				playerX = -3
+			if player.x <= -3 then
+				player.x = -3
 			else
-				playerX = playerX - 3
+				player.x = player.x - 3
 			end
-			playerFlipX=1
 		end
 		-- right
 		if btn(5) then
 			moving = true
-			if playerX >= 227 then
-				playerX = 227
+			if player.x >= 227 then
+				player.x = 227
 			else
-				playerX = playerX + 3	
+				player.x = player.x + 3	
 			end
-			playerFlipX=nil
 		end
 		-- up
 		if btn(6) then
 			moving = true
-			if playerY <= -2 then
-				playerY = -2
+			if player.y <= -2 then
+				player.y = -2
 			else
-				playerY = playerY - 3
+				player.y = player.y - 3
 			end
 		end
   	-- down
 		if btn(7) then
 			moving = true
-			if playerY >= 144 then
-				playerY = 144
+			if player.y >= 144 then
+				player.y = 144
 			else
-				playerY = playerY + 3
+				player.y = player.y + 3
 			end
 		end
 		-- A -- player shoot
@@ -232,14 +222,14 @@ function update()
 		-- animation
 		if moving then
 			if animate then
-				playerAnim=playerAnim+1
-				if playerAnim > 4 then
-					playerAnim=1
+				player.animState = player.animState + 1
+				if player.animState > 4 then
+					player.animState = 1
 				end
 			end
 		else
-			-- stand still
-			playerAnim=1
+			-- not moving
+			player.animState = 1
 		end
 
 		-- spawn enemies according to level script
@@ -254,8 +244,8 @@ function update()
 		end
 
 		-- scroll the star layer
-		scrollY = scrollY - 1
-		scroll(3, scrollX, scrollY)
+		bgScroll.y = bgScroll.y - 1
+		scroll(3, bgScroll.x, bgScroll.y)
 
 			-- update player bullet positions
 		for k, v in pairs(playerBullets) do
@@ -266,7 +256,7 @@ function update()
 			end
 		end
 
-		-- update enemy positions
+		-- enemy movement
 		for k, v in pairs(enemies) do
 			if v.type == 0 then
 				enemies[k].y = v.y - v.speedY
@@ -293,6 +283,7 @@ function update()
 			end
 		end
 
+		-- boss movement
 		local mod40 = (ticks % 40)
 		local mod80 = (ticks % 40)
 		for k, boss in pairs(bosses) do
@@ -338,17 +329,11 @@ function update()
 		
 		--# === OPTIMIZATION === 
 		--# Copy back the values from local to global vars with the same name at the end of the main loop (for gameplay only, other states are not so time critical so we didn't optimize them. And for gameover I actually use slowdown voluntarily for a more dramatic effect!)
-		_G.playerX = playerX
-		_G.playerY = playerY
-		_G.scrollX = scrollX
-		_G.scrollY = scrollY
-		_G.playerAnim = playerAnim
-		_G.playerFlipX = playerFlipX
+		_G.player = player
+		_G.bgScroll = bgScroll
 		_G.lastBulletTick = lastBulletTick
 		_G.bosses = bosses
-
-
-	--# === GAME OVER gameState ===	
+	-- game over
 	elseif gameState == 2 then
 	
 		--#If the game over animation isn't finished
@@ -356,26 +341,15 @@ function update()
 		
 			--#Decrease countdown
 			ticks_anim = ticks_anim-1
-						
-			--#Display Game over message
-			if ticks_anim == 130 then
-			
-				--#Erase the top line of text overlay (where score is displayed ingame)
-				for i = 0, 30, 1 do 
-					tile(0, i, 0, 1)
-				end
-			
-				print("GAME OVER", 10, 4)
-			end
-			
+
 			--#Fade out slowly 
 			if ticks_anim < 120 and ticks_anim >= 20 then
-				fade((ticks_anim-20)/100, 0xFFFFFF, nil, 1)
+				fade((ticks_anim - 20) / 100, 0xFFFFFF, nil, 1)
 			end
 			
 			--# When anim is finished, reset ticks so the blinking message starts immediatedly on the next frame
 			if ticks_anim == 0 then
-				ticks=29
+				ticks = 29
 			end
 
 		--#Else the countdown is finished, so we can restart the game if needed
@@ -385,7 +359,7 @@ function update()
 			if j == 30 then
 				print("Don't forget to vote and", 3, 13)
 				print("post high score in #codymullet", 0, 14)
-				print("Press A to restart", 5, 15)
+				print("Press B to restart", 5, 15)
 			elseif j == 0 then
 				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
 				for i = 4,26,1 do 
@@ -393,14 +367,13 @@ function update()
 				end
 			end
 		
-			--#Restart game when button pressed
-			if btnp(0) or btnp(1) then
-				--#Restart the game! (using a fading handled by a separate state)
-				gameState=3
+			-- B pressed, go to fade in state which eventually takes us to gameplay state
+			if btnp(1) then
+				gameState = 3
 				ticks_anim = 60
 			end
 		end	
-	--# === GAME (RE)START FADING gameState ===	
+	-- fading
 	elseif gameState == 3 then
 	
 		--#If the animation isn't finished
@@ -423,7 +396,8 @@ function update()
 			
 			--#Animation finished, start the game
 			else 
-				gameState=1
+				gameState = 1
+				level = 0
 			end
 
 		end
@@ -459,17 +433,14 @@ function update()
 			if j == 30 then
 				print("Press A to start", 8, 11)
 			elseif j == 0 then
-				--#erase the message (printing a "space" will leave a black square, this code put a transparent tile instead)
-				for i = 5,25,1 do 
+				for i = 5, 25, 1 do 
 					tile(0, i, 11, 1)
 				end
 			end
 		
 			--#Restart game when button pressed
 			if btnp(0) or btnp(1) then
-			
-				--#Start the game! (using a fading handled by a separate state)
-				gameState=3
+				gameState = 3
 				ticks_anim = 60
 				-- load game sprites after done rendering timtomcody
 				txtr(4, "sprites.bmp")
@@ -501,14 +472,10 @@ function drawTimTomCody(x, y)
 	drawBigSprites("timtomcodysprites.bmp", x, y)
 end
 
---# MEMO: sprites are drawn from front to bottom in BPCore-Engine
 function draw()
 	--# === OPTIMIZATION ===
 	--# Make local vars with the same names a the global one for faster access (no need to copy back values at the end of the function, as it only reads them)
-	local playerX=playerX
-	local playerY=playerY
-	local playerAnim=playerAnim
-	local playerFlipX=playerFlipX
+	local player = player
 	local lives = lives
 	local playerBullets = playerBullets
 	local enemies = enemies
@@ -523,7 +490,7 @@ function draw()
 		end
 
 		-- render player
-		spr(playerAnim, playerX, playerY, playerFlipX)
+		spr(player.animState, player.x, player.y)
 	
 		-- render player bullets
 		for k, v in pairs(playerBullets) do
@@ -547,9 +514,6 @@ function draw()
 			spr(boss.spriteIndex + 2, boss.x, boss.y + 16);  spr(boss.spriteIndex + 3, boss.x + 16, boss.y + 16)
 		end
 	end
-	
-	--# Then display Player
-	spr(playerAnim, playerX, playerY, playerFlipX)
 end
 
 function drawScore()
@@ -560,8 +524,8 @@ function spawnPlayerBullet()
 	table.insert(
 		playerBullets,
 		{
-			x = playerX,
-		  y = playerY - 8,
+			x = player.x,
+		  y = player.y - 8,
 		  speedX = 0,
 		  speedY = 2
 		}
@@ -618,9 +582,6 @@ function spawnEnemy(type, overrideX, overrideY)
 end
 
 function spawnBoss(level)
-	local spawnX = playerX
-	local initSpeedX = 0
-	local initSpeedY = -1
 	local randRange10 =math.random(-10, 10)
 
 	local config = {
@@ -630,7 +591,7 @@ function spawnBoss(level)
 			y = 16,
 			speedX = 4,
 			speedY = 0,
-			hp = 100
+			hp = 500
 		},
 		[1] = {
 			spriteIndex = 14,
@@ -638,7 +599,7 @@ function spawnBoss(level)
 			y = 8,
 			speedX = 1.5,
 			speedY = -4,
-			hp = 200
+			hp = 600
 		},
 		[2] = {
 			spriteIndex = 18,
@@ -646,7 +607,7 @@ function spawnBoss(level)
 			y = 8,
 			speedX = 3,
 			speedY = -2,
-			hp = 300
+			hp = 700
 		}
 	}
 
@@ -666,16 +627,17 @@ end
 
 function bossHit()
 	for k, v in pairs(bosses) do
-		v.hp = v.hp - 50
-		if v.hp <= 0 then
+		score = score + 10 -- 10 points per hit
+		v.hp = v.hp - 50 -- 50 hp loss per hit
+		if v.hp <= 0 then -- boss defeated
 			table.remove(bosses, k)
 			ticks = 0
+			score = score + (50 * (level + 1)) -- 50, 100, 150 points for each kill
 			if level < 2 then
 				updateStatus(levelNames[level].." DEFEATED!!!")
 				level = level + 1
 			else
-				updateStatus("GAME OVER :)")
-				gameState = 2
+				gameOver(true)
 			end
 		end
 	end
@@ -686,12 +648,16 @@ function playerHit()
 	lastPlayerHitTick = ticks
 	lives = lives - 1
 	if lives == 0 then
-		gameOver()
+		gameOver(false)
 	end
 end
 
-function gameOver()
-	updateStatus("GAME OVER :(")
+function gameOver(success)
+	local face = ":("
+	if success then
+		face = ":)"
+	end
+	updateStatus("GAME OVER "..face)
 	gameState = 2
 end
 
@@ -711,7 +677,7 @@ function detectCollision()
 	for ek, ev in pairs(bosses) do
 		-- check player collision (enemy collides with boss)
 		if (ticks - lastPlayerHitTick) > 30 then
-			if colliding(ev.x + 10, ev.y + 8, 7, 20,  playerX, playerY, 16, 16) then
+			if colliding(ev.x + 10, ev.y + 8, 7, 20,  player.x, player.y, 16, 16) then
 					playerHit()
 			end
 		end
@@ -719,7 +685,6 @@ function detectCollision()
 		for bk, bv in pairs(playerBullets) do
 			if colliding(ev.x + 10, ev.y + 8, 7, 20,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(playerBullets, bk)
-				score = score + 10
 				bossHit()
 				drawScore()
 			end
@@ -728,7 +693,7 @@ function detectCollision()
 	-- regular enemy collisions
 	for ek, ev in pairs(enemies) do
 		-- check player collision (enemy collides with player)
-		if colliding(ev.x, ev.y, 16, 16,  playerX, playerY + 12, 16, 16) then
+		if colliding(ev.x, ev.y, 16, 16,  player.x, player.y + 12, 16, 16) then
 				table.remove(enemies, ek)
 				playerHit()
 		end
@@ -737,7 +702,7 @@ function detectCollision()
 			if colliding(ev.x, ev.y, 16, 16,  bv.x, bv.y + 12, 16, 16) then
 				table.remove(enemies, ek)
 				table.remove(playerBullets, bk)
-				score = score + 10
+				score = score + 10 -- 10 points per enemy hit
 				drawScore()
 			end
 		end
