@@ -1,6 +1,5 @@
 -- gba screen res 240x160
 
---# Player
 playerX = 0
 playerY = -16
 playerAnim = 0
@@ -16,18 +15,16 @@ lastPlayerHitTick = 0
 enemies = {}
 bosses = {}
 
-tileStars = true
-stars = {}
-
---# Gameplay
-STATE = 0 --#Gameplay state: 0 (title) / 1 (gameplay) / 2 (gameover) / 3 (screen fade to (re)start game
-level = 1
+-- 0 = title screen
+-- 1 = gameplay
+-- 2 = gameover
+-- 3 = screen fading
+gameState = 0
+level = 0
 ticks = 0
 score = 0
 lives = 3
-highscore = -1
 ticks_anim = 0
-screenshake = 0
 
 levelNames = {
 	[0] = "TIM",
@@ -91,12 +88,10 @@ for i = 0,31,1 do
 	end
 end
 
-if tileStars then
-	--#Add random stars
-	for i = 0, 25, 1 do
-		--#Put a random star tile in a random position on the map
-		tile(3, math.random(30), math.random(30), 62+math.random(9))
-	end
+--#Add random stars
+for i = 0, 25, 1 do
+	--#Put a random star tile in a random position on the map
+	tile(3, math.random(30), math.random(30), 62+math.random(9))
 end
 
 --#Reorder the layer priority so the sprites are displayed OVER the overlay (other layers are kept to their default values)
@@ -115,48 +110,30 @@ function init()
 	enemies = {}
 	bosses = {}
 	lives = 3
-	foesTimer = 60
 	
-	--#Reset screenshake
-	screenshake = 0
-	scroll(2, 0, 0)
-	
-	--# Init player vars
 	playerX = 112
 	playerY = 130
 	playerFlipX = nil
 	playerAnim = 1
 	
-	--#Erase the overlay messages
-	--#For every line
-	for i = 0,19,1 do 
-		--#For every column
-		for j = 0,30,1 do 
-			--#Manually put a "blank" tile in the layer (tile id 1 in the overlay.bmp asset) - NB: there is no way to erase text with transparent tile for now
+	-- blank screen
+	for i = 0, 19, 1 do 
+		for j = 0, 30, 1 do 
 			tile(0, j, i, 1)
 		end
 	end
 
 	-- draw initial score
-	print("score:"..score, 0, 0)
-	
-	--# Play music
+	print("score:"..score, 0, 0)	
 	music("music1.raw", 0)
 end
 
-
---# ------------------------------------
---# ----- GAME UPDATE ------
---# ------------------------------------
 function update()
-
-	--# === TICKS ===
-		
-	--# Count ticks (used for game timing)
 	ticks = ticks+1
-	
-	--# Reset ticks counter every 60 seconds (i.e. after 1 min)
-	if ticks > 3601 then
+
+	if ticks == 1 then
+		lastBulletTick = 1
+	elseif ticks > 3601 then -- reset every 60 seconds (assuming 60fps performance)
 		ticks = 1
 		lastBulletTick = 1
 	end
@@ -164,10 +141,7 @@ function update()
 	--#OPTIMIZATION: make a local var with the same name as the global one, now that we won't be modifying it anymore but we'll read it quite often in the rest of the script / main loop
 	local ticks=ticks
 
-	--# === GAMEPLAY STATE ===
-	if STATE == 1 then
-		
-		--# === OPTIMIZATION ===
+	if gameState == 1 then
 		--# Make local vars with the same names as the global ones, then we'll copy back the values from local to global vars at the end of the main loop
 		local playerX = playerX
 		local playerY = playerY
@@ -175,28 +149,15 @@ function update()
 		local scrollY = scrollY
 		local playerAnim = playerAnim
 		local playerFlipX = playerFlipX
-		local screenshake = screenshake
-		local foesTimer = foesTimer
 		local lastBulletTick = lastBulletTick
 		local bosses = bosses
 	
-			
 		--# Local variable to check wether we can increase animation frame if player walks
 		local animate = ticks % 5 == 0
 		local shoot = ticks % 10 == 0
 		local star = ticks % 10 == 0
 		local moving = false
-		
-		-- right
-		if btn(5) then
-			moving = true
-			if playerX >= 227 then
-				playerX = 227
-			else
-				playerX = playerX + 3	
-			end
-			playerFlipX=nil
-		end
+
 		-- left
 		if btn(4) then
 			moving = true
@@ -206,6 +167,16 @@ function update()
 				playerX = playerX - 3
 			end
 			playerFlipX=1
+		end
+		-- right
+		if btn(5) then
+			moving = true
+			if playerX >= 227 then
+				playerX = 227
+			else
+				playerX = playerX + 3	
+			end
+			playerFlipX=nil
 		end
 		-- up
 		if btn(6) then
@@ -233,46 +204,32 @@ function update()
 			end
 		end
 
-		-- L -- spawn enemy type 0
-		if btn(8) then
-			if ticks - lastBulletTick > 10 then
-				spawnEnemy(0)
-				lastBulletTick = ticks
-			end
-		end
-		-- R -- spawn enemy type 1
-		if btn(9) then
-			if ticks - lastBulletTick > 10 then
-				spawnEnemy(1)
-				lastBulletTick = ticks
-			end
-		end
-		-- select -- spawn enemy type 2
-		if btn(3) then
-			if ticks - lastBulletTick > 10 then
-				spawnEnemy(2)
-				lastBulletTick = ticks
-			end
-		end
-		-- start
-		if btn(2) then
-		end
+		-- -- L -- spawn enemy type 0
+		-- if btn(8) then
+		-- 	if ticks - lastBulletTick > 10 then
+		-- 		spawnEnemy(0)
+		-- 		lastBulletTick = ticks
+		-- 	end
+		-- end
+		-- -- R -- spawn enemy type 1
+		-- if btn(9) then
+		-- 	if ticks - lastBulletTick > 10 then
+		-- 		spawnEnemy(1)
+		-- 		lastBulletTick = ticks
+		-- 	end
+		-- end
+		-- -- select -- spawn enemy type 2
+		-- if btn(3) then
+		-- 	if ticks - lastBulletTick > 10 then
+		-- 		spawnEnemy(2)
+		-- 		lastBulletTick = ticks
+		-- 	end
+		-- end
+		-- -- start
+		-- if btn(2) then
+		-- end
 
-		-- spawn enemies according to level script
-		if levels[level][ticks] then
-			-- black out line where status is printed
-			for i = 0, 29, 1 do
-					tile(0, i, 19, 1)
-				end
-			if levels[level][ticks] == -1 then
-				spawnBoss(level)
-				print("DEFEAT "..levelNames[level].."!!!", 0, 19)
-			else
-				spawnEnemy(levels[level][ticks])
-				print(levelNames[level]..": "..enemyNames[levels[level][ticks]], 0, 19)
-			end
-		end
-
+		-- animation
 		if moving then
 			if animate then
 				playerAnim=playerAnim+1
@@ -285,28 +242,22 @@ function update()
 			playerAnim=1
 		end
 
-		if tileStars then
-			-- scroll the stars
-			scrollY = scrollY - 1
-			scroll(3, scrollX, scrollY)
-		else
-			-- spawn star
-			if star then
-				spawnStar()
-			end
-			-- update star positions
-			for k, v in pairs(stars) do
-				stars[k].y = v.y - v.speedY
-				stars[k].x = v.x - v.speedX
-				-- cull stars that are off screen
-				if stars[k].y > 160 then
-					table.remove(stars, k)
-				end
+		-- spawn enemies according to level script
+		if levels[level][ticks] then
+			if levels[level][ticks] == -1 then
+				spawnBoss(level)
+				updateStatus("DEFEAT "..levelNames[level].."!!!")
+			else
+				spawnEnemy(levels[level][ticks])
+				updateStatus(levelNames[level]..": "..enemyNames[levels[level][ticks]])
 			end
 		end
-		
 
-		-- update player bullet positions
+		-- scroll the star layer
+		scrollY = scrollY - 1
+		scroll(3, scrollX, scrollY)
+
+			-- update player bullet positions
 		for k, v in pairs(playerBullets) do
 			playerBullets[k].y = playerBullets[k].y - playerBullets[k].speedY
 			-- cull player bullets that are off screen
@@ -384,22 +335,6 @@ function update()
 		end
 
 		detectCollision()
-
-		--# === SCREENSHAKE ===
-		
-		--# If we must apply screenshake
-		if screenshake > 0 then
-		
-			--#Decrease screenshake counter
-			screenshake = screenshake-1
-			
-			--# If we are still in screenshake mode, raise the ground, else put it back to normal position (it's hackjob to avoid using a modulo as we don't need an actual screenshake every 2 frames, but just a way to make the ground move a little after each meteor hitting ground)
-			if screenshake > 0 then
-				scroll(2, 0, 2)
-			else 
-				scroll(2, 0, 0)
-			end	
-		end
 		
 		--# === OPTIMIZATION === 
 		--# Copy back the values from local to global vars with the same name at the end of the main loop (for gameplay only, other states are not so time critical so we didn't optimize them. And for gameover I actually use slowdown voluntarily for a more dramatic effect!)
@@ -409,56 +344,27 @@ function update()
 		_G.scrollY = scrollY
 		_G.playerAnim = playerAnim
 		_G.playerFlipX = playerFlipX
-		_G.screenshake = screenshake
-		_G.foesTimer = foesTimer
 		_G.lastBulletTick = lastBulletTick
 		_G.bosses = bosses
 
 
-	--# === GAME OVER STATE ===	
-	elseif STATE == 2 then
+	--# === GAME OVER gameState ===	
+	elseif gameState == 2 then
 	
 		--#If the game over animation isn't finished
 		if ticks_anim > 0 then
 		
 			--#Decrease countdown
 			ticks_anim = ticks_anim-1
-			
-			--#Init : display load of meteor piece on the first frame
-			if ticks_anim == 179 then
-				
-				--# For each foe - DONT'T optimize this loop (by using for i + locals instead of ipairs + global like we did for gameplay and rendering) as the slowdown produces a better effect on the game over screen!
-				for i, obj  in ipairs(foes) do 
-					
-					--#Activate the foe
-					obj.active=1
-					
-					--#Position it over the player
-					obj.x=playerX+5-math.random(9)
-					obj.y=playerY-5+math.random(7)
-					
-					--#And set its speed values
-					obj.speedX=3-math.random(7)
-					obj.speedY=-(2+math.random(4))
-				end
-				
-				--#Stop the screenshake
-				screenshake=0
-				scroll(2, 0, 0)
-			end
-			
+						
 			--#Display Game over message
 			if ticks_anim == 130 then
 			
 				--#Erase the top line of text overlay (where score is displayed ingame)
-				--#For every column
-				for i = 0,30,1 
-				do 
-					--#Manually put a "black" tile in the layer
+				for i = 0, 30, 1 do 
 					tile(0, i, 0, 1)
 				end
 			
-				--#Display Game Over
 				print("GAME OVER", 10, 4)
 			end
 			
@@ -490,12 +396,12 @@ function update()
 			--#Restart game when button pressed
 			if btnp(0) or btnp(1) then
 				--#Restart the game! (using a fading handled by a separate state)
-				STATE=3
+				gameState=3
 				ticks_anim = 60
 			end
 		end	
-	--# === GAME (RE)START FADING STATE ===	
-	elseif STATE == 3 then
+	--# === GAME (RE)START FADING gameState ===	
+	elseif gameState == 3 then
 	
 		--#If the animation isn't finished
 		if ticks_anim > 0 then
@@ -517,14 +423,14 @@ function update()
 			
 			--#Animation finished, start the game
 			else 
-				STATE=1
+				gameState=1
 			end
 
 		end
 	
 	
-	--# === TITLE SCREEN STATE ===	
-	elseif STATE == 0 then
+	--# === TITLE SCREEN gameState ===	
+	elseif gameState == 0 then
 	
 		--#If the animation isn't finished
 		if ticks_anim > 0 then
@@ -563,7 +469,7 @@ function update()
 			if btnp(0) or btnp(1) then
 			
 				--#Start the game! (using a fading handled by a separate state)
-				STATE=3
+				gameState=3
 				ticks_anim = 60
 				-- load game sprites after done rendering timtomcody
 				txtr(4, "sprites.bmp")
@@ -603,26 +509,13 @@ function draw()
 	local playerY=playerY
 	local playerAnim=playerAnim
 	local playerFlipX=playerFlipX
-	local tileStars = tileStars
 	local lives = lives
 	local playerBullets = playerBullets
 	local enemies = enemies
 	local bosses = bosses
 	
 	-- gameplay
-	if STATE == 1 then
-
-		if not tileStars then
-			-- render stars
-			for k, v in pairs(stars) do
-				-- tile(3, v.x, v.y, 63)
-				if v.speedY == -2 then
-					spr(9, v.x, v.y)
-				else
-					spr(8, v.x, v.y)
-				end
-			end
-		end
+	if gameState == 1 then
 
 		-- render player lives
 		for i = 0, lives - 1, 1 do
@@ -650,8 +543,8 @@ function draw()
 
 		-- render boss
 		for k, boss in pairs(bosses) do
-			spr(boss.spriteIndex + 0, boss.x, boss.y);spr(boss.spriteIndex + 1, boss.x + 16, boss.y)
-			spr(boss.spriteIndex + 2, boss.x, boss.y + 16);spr(boss.spriteIndex + 3, boss.x + 16, boss.y + 16)
+			spr(boss.spriteIndex + 0, boss.x, boss.y);       spr(boss.spriteIndex + 1, boss.x + 16, boss.y)
+			spr(boss.spriteIndex + 2, boss.x, boss.y + 16);  spr(boss.spriteIndex + 3, boss.x + 16, boss.y + 16)
 		end
 	end
 	
@@ -661,23 +554,6 @@ end
 
 function drawScore()
 	print("score:"..score, 0, 0)
-end
-
-function spawnStar()
-	local speed = 2
-	if math.random(0, 2) == 0 then
-		speed = 1.5
-	end
-	table.insert(
-		stars,
-		{
-			x = math.random(240),
-		  y = -12,
-		  speedX = 0,
-			-- speedY = -2
-		  speedY = -1 * speed
-		}
-	)
 end
 
 function spawnPlayerBullet()
@@ -788,7 +664,24 @@ function spawnBoss(level)
 	)
 end
 
-function lifeLost()
+function bossHit()
+	for k, v in pairs(bosses) do
+		v.hp = v.hp - 50
+		if v.hp <= 0 then
+			table.remove(bosses, k)
+			ticks = 0
+			if level < 2 then
+				updateStatus(levelNames[level].." DEFEATED!!!")
+				level = level + 1
+			else
+				updateStatus("GAME OVER :)")
+				gameState = 2
+			end
+		end
+	end
+end
+
+function playerHit()
 	sound("sfx_crash.raw")
 	lastPlayerHitTick = ticks
 	lives = lives - 1
@@ -798,29 +691,46 @@ function lifeLost()
 end
 
 function gameOver()
+	updateStatus("GAME OVER :(")
+	gameState = 2
+end
+
+function updateStatus(str)
+	blankStatusLine()
+	print(str, 0, 19)
+end
+
+function blankStatusLine()
 	for i = 0, 29, 1 do
 		tile(0, i, 19, 1)
 	end
-	print("GAME OVER", 0, 19)
-	STATE = 2
 end
 
 function detectCollision()
-	for bk, bv in pairs(bosses) do
+	-- boss collisions
+	for ek, ev in pairs(bosses) do
 		-- check player collision (enemy collides with boss)
 		if (ticks - lastPlayerHitTick) > 30 then
-			if colliding(bv.x + 10, bv.y + 8, 7, 20,  playerX, playerY, 16, 16) then
-					-- table.remove(enemies, ek)
-					lifeLost()
+			if colliding(ev.x + 10, ev.y + 8, 7, 20,  playerX, playerY, 16, 16) then
+					playerHit()
+			end
+		end
+		-- check boss bullet collision (boss gets shot)
+		for bk, bv in pairs(playerBullets) do
+			if colliding(ev.x + 10, ev.y + 8, 7, 20,  bv.x, bv.y + 12, 16, 16) then
+				table.remove(playerBullets, bk)
+				score = score + 10
+				bossHit()
+				drawScore()
 			end
 		end
 	end
-	-- for each enemy
+	-- regular enemy collisions
 	for ek, ev in pairs(enemies) do
 		-- check player collision (enemy collides with player)
 		if colliding(ev.x, ev.y, 16, 16,  playerX, playerY + 12, 16, 16) then
 				table.remove(enemies, ek)
-				lifeLost()
+				playerHit()
 		end
 		-- check player bullet collision (enemy gets shot)
 		for bk, bv in pairs(playerBullets) do
@@ -836,7 +746,6 @@ end
 
 -- https://love2d.org/forums/viewtopic.php?p=196465&sid=7893979c5233b13efed2f638e114ce87#p196465
 function colliding(x1,y1,w1,h1, x2,y2,w2,h2)
-	-- print(x1..","..y1.." -- "..x2..","..y2, 0, 19)
   return (
     x1 < x2+w2 and
     x2 < x1+w1 and
@@ -847,25 +756,14 @@ end
 --# Count how much RAM the whole LUA script is using (max 256kb)
 -- print(tostring(collectgarbage("count")*1024), 0, 19)
 
-
---# ------------------------------------
---# ------- MAIN LOOP ---------
---# ------------------------------------
-
---#First, display the title screen (we are still with the screen faded off completely, so the "fade in" will be made by title screen state)
-STATE=0
+gameState=0
 --#Define the duration for the title screen animation (fade in)
 ticks_anim=60
 
---#Then, enter the endless loop of the program
 while true do
-	--#Update the game code (don't use the delta variable time as we don't need it for this game - every CPU cycle counts here!)
 	update()
-	--# Clear screen and waits for Vblank
 	clear()
-	--# Draw screen (make the spr and tile calls)
 	draw()
-	--# Process the spr and tile calls to actually update the display
 	display()	
 end
 
