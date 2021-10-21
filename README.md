@@ -1,4 +1,4 @@
-# OJO Hackation 2021 - Customer Profile Shooter
+# OJO Hackathon 2021 - Customer Profile Shooter
 
 [Demo Video](https://vimeo.com/637255705)
 
